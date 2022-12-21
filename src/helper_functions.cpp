@@ -35,3 +35,14 @@ std::string bytesToFormattedString(unsigned char* bytes, int len)
     text = text + "\n";
     return text;
 }
+
+unsigned int readDisk(HANDLE hdisk, LARGE_INTEGER position, BYTE* buffer, unsigned int buf_size)
+{
+    //LARGE_INTEGER position = { 0 };
+    BOOL ok = SetFilePointerEx(hdisk, position, nullptr, FILE_BEGIN);
+
+    //BYTE buffer[512];
+    DWORD read;
+    ok = ReadFile(hdisk, buffer, buf_size, &read, nullptr);
+    return read;
+}

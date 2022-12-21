@@ -38,10 +38,13 @@ int main()
     //cin >> ok;
 
 
-    unsigned char sector[512];
+    /*unsigned char sector[512];
     std::copy(buf, buf + 512, sector);
     BOOT_SECTOR_INFO boot_sector_info(sector);
-    std::cout << boot_sector_info.toString() << std::endl;
+    std::cout << boot_sector_info.toString() << std::endl;*/
+
+    FAT32_INFO fat32_info(hdisk);
+    std::cout << fat32_info.toString() << std::endl;
 
     
 

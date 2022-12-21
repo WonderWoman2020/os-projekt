@@ -1,5 +1,6 @@
 #include<string>
 #include<vector>
+#include<Windows.h>
 #include"helper_functions.hpp"
 
 
@@ -53,13 +54,15 @@ public:
     BOOT_SECTOR_INFO* boot_sector;
     unsigned int FAT_1_offset;
     unsigned int FAT_2_offset;
-    std::vector<unsigned char[512]> FAT_1;
-    std::vector<unsigned char[512]> FAT_2;
+    std::vector<unsigned char*> FAT_1;
+    std::vector<unsigned char*> FAT_2;
     std::vector<FOLDER_INFO*> folders;
     std::vector<FILE_INFO*> files;
-    FAT32_INFO(unsigned char* data);
+    FAT32_INFO(HANDLE hdisk);
 
-    bool setFAT();
-    bool setFolders();
-    bool setFiles();
+    bool setBootSector(HANDLE hdisk);
+    bool setFAT(HANDLE hdisk, std::vector<unsigned char*> &FAT, unsigned int FAT_offset);
+    bool setFolders(HANDLE hdisk);
+    bool setFiles(HANDLE hdisk);
+    std::string toString();
 };
