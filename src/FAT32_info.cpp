@@ -57,8 +57,46 @@ std::string BOOT_SECTOR_INFO::toString()
 }
 
 
-/*class FAT32_INFO
+//class FOLDER_INFO
+FOLDER_INFO::FOLDER_INFO()
 {
-public:
-    BOOT_SECTOR_INFO boot_sector;
-};*/
+    this->isDeleted = false;
+}
+
+//class FILE_INFO
+FILE_INFO::FILE_INFO()
+{
+    this->isDeleted = false;
+}
+
+//class FAT32_INFO
+FAT32_INFO::FAT32_INFO(unsigned char* data)
+{
+    unsigned char buffer[512];
+    std::copy(data, data + 512, buffer);
+    this->boot_sector = new BOOT_SECTOR_INFO(buffer);
+
+    this->FAT_1_offset = 512 + this->boot_sector->bpb->reserved_sectors*512;
+    this->FAT_2_offset = this->FAT_1_offset + this->boot_sector->bpb->sectors_per_fat_table * 512;
+}
+
+
+bool FAT32_INFO::setFAT()
+{
+    unsigned char buffer[512];
+    for (unsigned int i = 0; i < this->boot_sector->bpb->sectors_per_fat_table; i++)
+    {
+
+    }
+    return true;
+}
+
+bool FAT32_INFO::setFolders()
+{
+    return true;
+}
+
+bool FAT32_INFO::setFiles()
+{
+    return true;
+}

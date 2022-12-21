@@ -37,23 +37,13 @@ int main()
     //std::cout << ok << std::endl << (short)buf[510]<< ", " << (short)buf[511] << std::endl;
     //cin >> ok;
 
-    /*unsigned char buffer[4];
-    std::copy(buf + 36, buf + 36+4, buffer);
-    std::cout << bytesToFormattedString(buffer, 4);*/
-    //std::cout << convertBytesToInt(buffer, 4) << std::endl;
-
-    /*std::copy(buf + 510, buf + 510 + 2, buffer);
-    std::cout << bytesToFormattedString(buffer, 2);*/
-
-    /*unsigned char name[9] = {0};
-    std::copy(buf + 3, buf + 11, name);
-    std::cout << name << std::endl;*/
 
     unsigned char sector[512];
     std::copy(buf, buf + 512, sector);
     BOOT_SECTOR_INFO boot_sector_info(sector);
     std::cout << boot_sector_info.toString() << std::endl;
 
+    
 
 	return 0;
 }

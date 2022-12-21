@@ -1,4 +1,5 @@
 #include<string>
+#include<vector>
 #include"helper_functions.hpp"
 
 
@@ -34,8 +35,31 @@ public:
 
 };
 
+class FOLDER_INFO
+{
+    bool isDeleted;
+    FOLDER_INFO();
+};
+
+class FILE_INFO
+{
+    bool isDeleted;
+    FILE_INFO();
+};
+
 class FAT32_INFO
 {
 public:
-    BOOT_SECTOR_INFO boot_sector;
+    BOOT_SECTOR_INFO* boot_sector;
+    unsigned int FAT_1_offset;
+    unsigned int FAT_2_offset;
+    std::vector<unsigned char[512]> FAT_1;
+    std::vector<unsigned char[512]> FAT_2;
+    std::vector<FOLDER_INFO*> folders;
+    std::vector<FILE_INFO*> files;
+    FAT32_INFO(unsigned char* data);
+
+    bool setFAT();
+    bool setFolders();
+    bool setFiles();
 };
