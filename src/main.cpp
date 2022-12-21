@@ -5,48 +5,91 @@
 
 using namespace std;
 
-int convertBytesToInt(unsigned char* bytes, int len);
 
-/*class PARTITION_INFO
+int convertBytesToInt(unsigned char* bytes, int len);
+std::string bytesToFormattedString(unsigned char* bytes, int len);
+
+class BPB_INFO
 {
 public:
-    int number_of_sectors;
-    int LBA_begin_address_val;
-    unsigned char FS_type_code;
+    unsigned short bytes_per_sector;
+    unsigned char sectors_per_cluster;
+    unsigned short reserved_sectors;
+    unsigned char media_descriptor;
+    unsigned int all_sectors_on_volume;
+    unsigned int sectors_per_fat_table;
+    unsigned short fs_version;
+    unsigned int root_first_cluster;
+    unsigned short fs_info_sector;
 
-    PARTITION_INFO(unsigned char partition[16])
+
+    BPB_INFO(unsigned char data[512])
     {
-        unsigned char buffer[4] = {0};
-        std::copy(partition+12, partition+16, buffer);
-        this->number_of_sectors = convertBytesToInt(buffer, 4);
-        std::copy(partition + 8, partition + 12, buffer);
-        this->LBA_begin_address_val = convertBytesToInt(buffer, 4);
-        this->FS_type_code = partition[4];
+        this->bytes_per_sector = this->calculateField(data, 11, 2);
+        this->sectors_per_cluster = this->calculateField(data, 13, 1);
+        this->reserved_sectors = this->calculateField(data, 14, 1);
+        this->media_descriptor = this->calculateField(data, 21, 1);
+        this->all_sectors_on_volume = this->calculateField(data, 0x20, 4);
+        this->sectors_per_fat_table = this->calculateField(data, 0x24, 4);
+        this->fs_version = this->calculateField(data, 0x2A, 2);
+        this->root_first_cluster = this->calculateField(data, 0x2C, 4);
+        this->fs_info_sector = this->calculateField(data, 0x30, 2);
+    }
+
+    unsigned int calculateField(unsigned char data[512], short offset, short size)
+    {
+        unsigned char* buffer = new unsigned char[size];
+        std::copy(data + offset, data + offset + size, buffer);
+        return convertBytesToInt(buffer, size);
     }
 
     std::string toString()
     {
-        return "Number of sectors: " + std::to_string(this->number_of_sectors) + "\n"
-            + "LBA begin addres: " + std::to_string(this->LBA_begin_address_val) + "\n"
-            + "File system type code: " + std::to_string(this->FS_type_code) + "\n";
+        return "** BPB INFO START **\n\n"
+            "Bytes per sector: " + std::to_string(this->bytes_per_sector) + "\n"
+            + "Sectors per cluster: " + std::to_string(this->sectors_per_cluster) + "\n"
+            + "Reserved sectors: " + std::to_string(this->reserved_sectors) + "\n"
+            + "Media descriptor: " + std::to_string(this->media_descriptor) + "\n"
+            + "All sectors on volume: " + std::to_string(this->all_sectors_on_volume) + "\n"
+            + "Sectors per FAT table: " + std::to_string(this->sectors_per_fat_table) + "\n"
+            + "File system version: " + std::to_string(this->fs_version) + "\n"
+            + "Root first cluster: " + std::to_string(this->root_first_cluster) + "\n"
+            + "File system info sector: " + std::to_string(this->fs_info_sector) + "\n"
+            "\n** BPB INFO END **\n";
     }
 
 };
 
-class MBR_INFO
+class BOOT_SECTOR_INFO
 {
 public:
-    unsigned char boot_code[446];
-    PARTITION_INFO partitions[4];
     unsigned char sanity_check_code[2];
+    BPB_INFO* bpb;
+    unsigned char oem_id[9];
+
+    BOOT_SECTOR_INFO(unsigned char data[512])
+    {
+        this->bpb = new BPB_INFO(data);
+        std::copy(data + 3, data + 11, this->oem_id);
+        std::copy(data + 510, data + 512, this->sanity_check_code);
+    }
+
+    std::string toString()
+    {
+        return "--- BOOT SECTOR INFO START ---\n\n"
+            "OEM ID: " + std::string((char*)this->oem_id) + "\n"
+            +"\n"+ bpb->toString()+"\n"
+            + "Sanity check code: " + bytesToFormattedString(this->sanity_check_code, 2)
+            +"\n--- BOOT SECTOR INFO END ---\n";
+    }
 
 };
 
 class FAT32_INFO
 {
 public:
-    MBR_INFO mbr;
-};*/
+    BOOT_SECTOR_INFO boot_sector;
+};
 
 
 int convertBytesToInt(unsigned char* bytes, int len)
@@ -109,16 +152,26 @@ int main()
     DWORD read;
     ok = ReadFile(hdisk, buf, 65536, &read, nullptr);
     //assert(ok);
-    std::cout << ok << std::endl << (short)buf[510]<< ", " << (short)buf[511] << std::endl;
+    //std::cout << ok << std::endl << (short)buf[510]<< ", " << (short)buf[511] << std::endl;
     //cin >> ok;
 
-    unsigned char buffer[4];
+    /*unsigned char buffer[4];
     std::copy(buf + 36, buf + 36+4, buffer);
-    std::cout << bytesToFormattedString(buffer, 4);
+    std::cout << bytesToFormattedString(buffer, 4);*/
     //std::cout << convertBytesToInt(buffer, 4) << std::endl;
 
-    std::copy(buf + 510, buf + 510+2, buffer);
-    std::cout << bytesToFormattedString(buffer, 2);
+    /*std::copy(buf + 510, buf + 510 + 2, buffer);
+    std::cout << bytesToFormattedString(buffer, 2);*/
+
+    /*unsigned char name[9] = {0};
+    std::copy(buf + 3, buf + 11, name);
+    std::cout << name << std::endl;*/
+
+    unsigned char sector[512];
+    std::copy(buf, buf + 512, sector);
+    BOOT_SECTOR_INFO boot_sector_info(sector);
+    std::cout << boot_sector_info.toString() << std::endl;
+
 
 	return 0;
 }
