@@ -111,8 +111,8 @@ bool FAT32_INFO::readDirEntries(HANDLE hdisk, unsigned int starting_cluster_numb
         for (int i = 0; i < number_of_entries_in_cluster; i++)
         {
             FILE_ENTRY* entry = new FILE_ENTRY(cluster, i);
-            if (entry->isFolder)
-                readDirEntries(hdisk, entry->starting_cluster);
+            /*if (entry->isFolder)
+                readDirEntries(hdisk, entry->starting_cluster);*/
             this->files_and_dirs.push_back(entry);
         }
         cluster_number = 0;//this->FAT_1[512*]
@@ -141,10 +141,17 @@ std::string FAT32_INFO::toString()
 //class FILE_ENTRY
 FILE_ENTRY::FILE_ENTRY(unsigned char* data, unsigned int entry_number)
 {
-    this->isDeleted = false;
-    this->isFolder = false;
+    std::copy(data + entry_number * 32 + 11, data + entry_number * 32 + 12, &this->dir_atrribute);
+    if (this->dir_atrribute == 0x10)
+        this->isFolder = true;
+    else
+        this->isFolder = false;
     std::fill(this->name, this->name + 12, 0);
     std::copy(data+entry_number*32, data + entry_number*32 + 11, this->name);
+    if (this->name[0] == 0xE5)
+        this->isDeleted = true;
+    else
+        this->isDeleted = false;
     unsigned char buffer[4];
     unsigned char clusterLow[2];
     unsigned char clusterHigh[2];
