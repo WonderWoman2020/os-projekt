@@ -148,8 +148,11 @@ FILE_ENTRY::FILE_ENTRY(unsigned char* data, unsigned int entry_number)
     unsigned char buffer[4];
     unsigned char clusterLow[2];
     unsigned char clusterHigh[2];
-    std::copy(data + entry_number * 32 + 23, data + entry_number * 32 + 25, buffer);
-    this->starting_cluster = convertBytesToInt(buffer, 2);
+    std::copy(data + entry_number * 32 + 26, data + entry_number * 32 + 28, clusterLow);
+    std::copy(data + entry_number * 32 + 20, data + entry_number * 32 + 22, clusterHigh);
+    std::copy(clusterLow, clusterLow + 2, buffer);
+    std::copy(clusterHigh, clusterHigh + 2, buffer + 2);
+    this->starting_cluster = convertBytesToInt(buffer, 4);
     std::copy(data + entry_number * 32 + 28, data + entry_number * 32 + 32, buffer);
     this->size = convertBytesToInt(buffer, 4);
 }
