@@ -46,6 +46,7 @@ int main()
     FAT32_INFO fat32_info(hdisk);
     std::cout << fat32_info.toString() << std::endl;
 
+    fat32_info.showFilesEntries();
     
 
 	return 0;
