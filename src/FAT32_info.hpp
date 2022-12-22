@@ -37,6 +37,8 @@ public:
     unsigned int getFatSize();
     unsigned int getClusterSize();
     LARGE_INTEGER getClusterPosition(unsigned int cluster_number);
+    unsigned int getSectorSize();
+    unsigned int getRootClusterNumber();
     std::string toString();
 };
 
@@ -48,11 +50,11 @@ public:
     unsigned int starting_cluster;
     unsigned int size;
     unsigned char dir_atrribute;
-    FILE_ENTRY(unsigned char* data, unsigned int entry_number);
+    FILE_ENTRY(unsigned char* data);
     std::string toString();
     bool isFolder();
     bool isDeleted();
-    bool setStartingCluster(unsigned char* data, unsigned int entry_number);
+    bool setStartingCluster(unsigned char* data);
 };
 
 
@@ -79,7 +81,7 @@ public:
     bool setFAT(HANDLE hdisk, std::vector<unsigned char*> &FAT, unsigned int FAT_offset);
     bool readDirEntries(HANDLE hdisk, unsigned int starting_cluster_number);
     
-    //unsigned int calculateEntryPosition();
+    unsigned int calculateEntryPosition(unsigned int entry_number);
 
     void showFilesEntries();
     std::string toString();

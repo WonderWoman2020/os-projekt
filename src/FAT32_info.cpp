@@ -57,27 +57,39 @@ std::string BOOT_SECTOR_INFO::toString()
 
 LARGE_INTEGER BOOT_SECTOR_INFO::getClusterPosition(unsigned int cluster_number)
 {
-    return { this->getUserDataOffset() + (cluster_number - 2) * this->bpb->sectors_per_cluster * 512 };
+    return { this->getUserDataOffset() + (cluster_number - 2) * this->getClusterSize() };
 }
 
 unsigned int BOOT_SECTOR_INFO::getFatSize()
 {
-    return this->bpb->sectors_per_fat_table * 512;
+    return this->bpb->sectors_per_fat_table * this->getSectorSize();
 }
 
 unsigned int BOOT_SECTOR_INFO::getFatOffset(short table_number)
 {
-    return this->bpb->reserved_sectors * 512 + (table_number-1)*this->getFatSize();
+    return this->bpb->reserved_sectors * this->getSectorSize() + (table_number-1)*this->getFatSize();
 }
 unsigned int BOOT_SECTOR_INFO::getUserDataOffset()
 {
-    return this->bpb->reserved_sectors * 512 + 2 * this->getFatSize();
+    return this->bpb->reserved_sectors * this->getSectorSize() + 2 * this->getFatSize();
 }
 
 unsigned int BOOT_SECTOR_INFO::getClusterSize()
 {
-    return this->bpb->sectors_per_cluster * 512;
+    return this->bpb->sectors_per_cluster * this->getSectorSize();
 }
+
+
+unsigned int BOOT_SECTOR_INFO::getSectorSize()
+{
+    return this->bpb->bytes_per_sector;
+}
+
+unsigned int BOOT_SECTOR_INFO::getRootClusterNumber()
+{
+    return this->bpb->root_first_cluster;
+}
+
 
 //class FAT32_INFO
 FAT32_INFO::FAT32_INFO(HANDLE hdisk)
@@ -104,9 +116,9 @@ bool FAT32_INFO::setFAT(HANDLE hdisk, std::vector<unsigned char*>& FAT, unsigned
     unsigned char* FAT_sector;
     for (unsigned int i = 0; i < this->boot_sector->bpb->sectors_per_fat_table; i++)
     {
-        FAT_sector = new unsigned char[512];
+        FAT_sector = new unsigned char[this->boot_sector->getSectorSize()];
         //std::copy(data + i * 512, data + (i + 1) * 512, buffer);
-        readDisk(hdisk, { FAT_offset + i * 512 }, FAT_sector, 512);
+        readDisk(hdisk, { FAT_offset + i * 512 }, FAT_sector, this->boot_sector->getSectorSize());
         FAT.push_back(FAT_sector);
     }
     return true;
@@ -115,18 +127,18 @@ bool FAT32_INFO::setFAT(HANDLE hdisk, std::vector<unsigned char*>& FAT, unsigned
 
 bool FAT32_INFO::readDirEntries(HANDLE hdisk, unsigned int starting_cluster_number)
 {
-    unsigned int cluster_size_bytes = this->boot_sector->bpb->sectors_per_cluster * 512;
-    unsigned char* cluster = new unsigned char[cluster_size_bytes];
-    unsigned int number_of_entries_in_cluster = cluster_size_bytes / 32;
+    //unsigned int cluster_size_bytes = this->boot_sector->bpb->sectors_per_cluster * 512;
+    unsigned char* cluster = new unsigned char[this->boot_sector->getClusterSize()];
+    unsigned int number_of_entries_in_cluster = this->boot_sector->getClusterSize() / 32;
 
     unsigned int cluster_number = starting_cluster_number;
     while (cluster_number != 0xFFFFFFFF && cluster_number != 0)
     {
-        readDisk(hdisk, { this->boot_sector->getClusterPosition(starting_cluster_number) }, cluster, cluster_size_bytes);
+        readDisk(hdisk, { this->boot_sector->getClusterPosition(starting_cluster_number) }, cluster, this->boot_sector->getClusterSize());
 
         for (int i = 0; i < number_of_entries_in_cluster; i++)
         {
-            FILE_ENTRY* entry = new FILE_ENTRY(cluster, i);
+            FILE_ENTRY* entry = new FILE_ENTRY(cluster + this->calculateEntryPosition(i));
             this->files_and_dirs.push_back(entry);
             /*if (entry->isFolder)
                 readDirEntries(hdisk, entry->starting_cluster);*/
@@ -143,6 +155,11 @@ void FAT32_INFO::showFilesEntries()
         std::cout << i<< ": " << this->files_and_dirs.at(i)->toString() << std::endl;
 }
 
+unsigned int FAT32_INFO::calculateEntryPosition(unsigned int entry_number)
+{
+    return entry_number * 32;
+}
+
 std::string FAT32_INFO::toString()
 {
     return "|| FAT32 INFO START ||\n"
@@ -156,14 +173,14 @@ std::string FAT32_INFO::toString()
 }
 
 //class FILE_ENTRY
-FILE_ENTRY::FILE_ENTRY(unsigned char* data, unsigned int entry_number)
+FILE_ENTRY::FILE_ENTRY(unsigned char* data)
 {
     std::fill(this->name, this->name + 12, 0);
-    std::copy(data+entry_number*32, data + entry_number*32 + 11, this->name);
-    std::copy(data + entry_number * 32 + 11, data + entry_number * 32 + 12, &this->dir_atrribute);
-    this->setStartingCluster(data, entry_number);
+    std::copy(data, data + 11, this->name);
+    std::copy(data + 11, data + 12, &this->dir_atrribute);
+    this->setStartingCluster(data);
     unsigned char buffer[4];
-    std::copy(data + entry_number * 32 + 28, data + entry_number * 32 + 32, buffer);
+    std::copy(data + 28, data + 32, buffer);
     this->size = convertBytesToInt(buffer, 4);
 }
 
@@ -183,11 +200,11 @@ bool FILE_ENTRY::isDeleted()
         return false;
 }
 
-bool FILE_ENTRY::setStartingCluster(unsigned char* data, unsigned int entry_number)
+bool FILE_ENTRY::setStartingCluster(unsigned char* data)
 {
     unsigned char buffer[4];
-    std::copy(data + entry_number * 32 + 26, data + entry_number * 32 + 28, buffer);
-    std::copy(data + entry_number * 32 + 20, data + entry_number * 32 + 22, buffer+2);
+    std::copy(data + 26, data + 28, buffer);
+    std::copy(data + 20, data + 22, buffer+2);
     this->starting_cluster = convertBytesToInt(buffer, 4);
     return true;
 }
