@@ -16,6 +16,9 @@ public:
     unsigned short fs_info_sector;
 
     BPB_INFO(unsigned char data[512]);
-    unsigned int calculateField(unsigned char data[512], short offset, short size);
     std::string toString();
+
+private: 
+    unsigned int calculateField(unsigned char data[512], short offset, short size);
+    
 };

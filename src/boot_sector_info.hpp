@@ -7,7 +7,6 @@ class BOOT_SECTOR_INFO
 {
 public:
     unsigned char sanity_check_code[2];
-    BPB_INFO* bpb;
     unsigned char oem_id[9];
 
     BOOT_SECTOR_INFO(unsigned char data[512]);
@@ -19,4 +18,7 @@ public:
     unsigned int getSectorSize();
     unsigned int getRootClusterNumber();
     std::string toString();
+
+private: 
+    BPB_INFO* bpb;
 };

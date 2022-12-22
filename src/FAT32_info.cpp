@@ -1,14 +1,41 @@
 #include "FAT32_info.hpp"
 
 
+
+FAT_TABLE::FAT_TABLE(unsigned char* data, unsigned int size)
+{
+    this->entries = data;
+    this->size = size;
+}
+
+int FAT_TABLE::getNextFileClusterNumber(int cluster_number)
+{
+    return 0;
+}
+
+bool FAT_TABLE::isLastFileCluster(int cluster_number)
+{
+    return true;
+}
+
+bool FAT_TABLE::isFreeCluster(int cluster_number)
+{
+    return true;
+}
+
+bool FAT_TABLE::isBadCluster(int cluster_number)
+{
+    return true;
+}
+
+
 //class FAT32_INFO
 FAT32_INFO::FAT32_INFO(HANDLE hdisk)
 {
     unsigned char buffer[512];
     this->setBootSector(hdisk);
-    this->setFAT(hdisk, this->FAT_1, this->boot_sector->getFatOffset(1));
-    this->setFAT(hdisk, this->FAT_2, this->boot_sector->getFatOffset(2));
-    this->readDirEntries(hdisk, this->boot_sector->bpb->root_first_cluster);
+    this->setFATs(hdisk);
+    this->readDirEntries(hdisk, this->boot_sector->getRootClusterNumber());
 }
 
 
@@ -21,23 +48,26 @@ bool FAT32_INFO::setBootSector(HANDLE hdisk)
 }
 
 
-bool FAT32_INFO::setFAT(HANDLE hdisk, std::vector<unsigned char*>& FAT, unsigned int FAT_offset)
+bool FAT32_INFO::setFATs(HANDLE hdisk)
 {
-    unsigned char* FAT_sector;
-    for (unsigned int i = 0; i < this->boot_sector->bpb->sectors_per_fat_table; i++)
+    for (unsigned char i = 0; i < 2; i++)
     {
-        FAT_sector = new unsigned char[this->boot_sector->getSectorSize()];
-        //std::copy(data + i * 512, data + (i + 1) * 512, buffer);
-        readDisk(hdisk, { FAT_offset + i * 512 }, FAT_sector, this->boot_sector->getSectorSize());
-        FAT.push_back(FAT_sector);
+        unsigned char* FAT = new unsigned char[this->boot_sector->getFatSize()];
+        readDisk(hdisk, { this->boot_sector->getFatOffset(i) }, FAT, this->boot_sector->getFatSize());
+        this->FATs.push_back(new FAT_TABLE(FAT, this->boot_sector->getFatSize()));
     }
     return true;
 }
 
 
+FAT_TABLE* FAT32_INFO::getFAT(short table_number)
+{
+    return this->FATs.at(table_number-1);
+}
+
+
 bool FAT32_INFO::readDirEntries(HANDLE hdisk, unsigned int starting_cluster_number)
 {
-    //unsigned int cluster_size_bytes = this->boot_sector->bpb->sectors_per_cluster * 512;
     unsigned char* cluster = new unsigned char[this->boot_sector->getClusterSize()];
     unsigned int number_of_entries_in_cluster = this->boot_sector->getClusterSize() / 32;
 
@@ -75,9 +105,9 @@ std::string FAT32_INFO::toString()
     return "|| FAT32 INFO START ||\n"
         "\n" + this->boot_sector->toString() + "\n"
         + "FAT1 offset: "+std::to_string(this->boot_sector->getFatOffset(1))+"\n"
-        + "FAT1 size (in sectors): " + std::to_string(this->FAT_1.size()) + "\n"
+        + "FAT1 size (in sectors): " + std::to_string(this->getFAT(1)->size/this->boot_sector->getSectorSize()) + "\n"
         + "FAT2 offset: " + std::to_string(this->boot_sector->getFatOffset(2)) + "\n"
-        + "FAT2 size (in sectors): " + std::to_string(this->FAT_2.size()) + "\n"
+        + "FAT2 size (in sectors): " + std::to_string(this->getFAT(2)->size / this->boot_sector->getSectorSize()) + "\n"
         + "User data offset: " + std::to_string(this->boot_sector->getUserDataOffset())+"\n"
         + "\n|| FAT32 INFO END ||\n";
 }
