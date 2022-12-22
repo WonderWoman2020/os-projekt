@@ -47,6 +47,18 @@ int main()
     std::cout << fat32_info.toString() << std::endl;
 
     fat32_info.showFilesEntries();
+
+    /*for (int i = 0; i < fat32_info.files_and_dirs.size(); i++)
+    {
+        FILE_ENTRY* entry = fat32_info.files_and_dirs.at(i);
+        if (!entry->isFolder && entry->size > 0)
+        {
+            unsigned char* buffer = new unsigned char[entry->size];
+            readDisk(hdisk, { fat32_info.getClusterPosition(entry->starting_cluster) }, buffer, entry->size);
+            delete[] buffer;
+            //WriteFile()
+        }
+    }*/
     
 
 	return 0;

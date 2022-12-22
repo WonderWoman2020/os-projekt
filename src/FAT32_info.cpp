@@ -55,16 +55,37 @@ std::string BOOT_SECTOR_INFO::toString()
         + "\n--- BOOT SECTOR INFO END ---\n";
 }
 
+LARGE_INTEGER BOOT_SECTOR_INFO::getClusterPosition(unsigned int cluster_number)
+{
+    return { this->getUserDataOffset() + (cluster_number - 2) * this->bpb->sectors_per_cluster * 512 };
+}
+
+unsigned int BOOT_SECTOR_INFO::getFatSize()
+{
+    return this->bpb->sectors_per_fat_table * 512;
+}
+
+unsigned int BOOT_SECTOR_INFO::getFatOffset(short table_number)
+{
+    return this->bpb->reserved_sectors * 512 + (table_number-1)*this->getFatSize();
+}
+unsigned int BOOT_SECTOR_INFO::getUserDataOffset()
+{
+    return this->bpb->reserved_sectors * 512 + 2 * this->getFatSize();
+}
+
+unsigned int BOOT_SECTOR_INFO::getClusterSize()
+{
+    return this->bpb->sectors_per_cluster * 512;
+}
+
 //class FAT32_INFO
 FAT32_INFO::FAT32_INFO(HANDLE hdisk)
 {
     unsigned char buffer[512];
     this->setBootSector(hdisk);
-    this->FAT_1_offset = this->boot_sector->bpb->reserved_sectors*512;
-    this->FAT_2_offset = this->FAT_1_offset + this->boot_sector->bpb->sectors_per_fat_table * 512;
-    this->user_data_offset = this->FAT_2_offset + this->boot_sector->bpb->sectors_per_fat_table * 512;
-    this->setFAT(hdisk, this->FAT_1, this->FAT_1_offset);
-    this->setFAT(hdisk, this->FAT_2, this->FAT_2_offset);
+    this->setFAT(hdisk, this->FAT_1, this->boot_sector->getFatOffset(1));
+    this->setFAT(hdisk, this->FAT_2, this->boot_sector->getFatOffset(2));
     this->readDirEntries(hdisk, this->boot_sector->bpb->root_first_cluster);
 }
 
@@ -91,11 +112,6 @@ bool FAT32_INFO::setFAT(HANDLE hdisk, std::vector<unsigned char*>& FAT, unsigned
     return true;
 }
 
-LARGE_INTEGER FAT32_INFO::getClusterPosition(unsigned int cluster_number)
-{
-    return { this->user_data_offset + (cluster_number-2) * this->boot_sector->bpb->sectors_per_cluster * 512 };
-}
-
 
 bool FAT32_INFO::readDirEntries(HANDLE hdisk, unsigned int starting_cluster_number)
 {
@@ -106,17 +122,18 @@ bool FAT32_INFO::readDirEntries(HANDLE hdisk, unsigned int starting_cluster_numb
     unsigned int cluster_number = starting_cluster_number;
     while (cluster_number != 0xFFFFFFFF && cluster_number != 0)
     {
-        readDisk(hdisk, { this->getClusterPosition(starting_cluster_number) }, cluster, cluster_size_bytes);
+        readDisk(hdisk, { this->boot_sector->getClusterPosition(starting_cluster_number) }, cluster, cluster_size_bytes);
 
         for (int i = 0; i < number_of_entries_in_cluster; i++)
         {
             FILE_ENTRY* entry = new FILE_ENTRY(cluster, i);
+            this->files_and_dirs.push_back(entry);
             /*if (entry->isFolder)
                 readDirEntries(hdisk, entry->starting_cluster);*/
-            this->files_and_dirs.push_back(entry);
         }
         cluster_number = 0;//this->FAT_1[512*]
     }
+    delete[] cluster;
     return true;
 }
 
@@ -130,46 +147,58 @@ std::string FAT32_INFO::toString()
 {
     return "|| FAT32 INFO START ||\n"
         "\n" + this->boot_sector->toString() + "\n"
-        + "FAT1 offset: "+std::to_string(this->FAT_1_offset)+"\n"
-        + "FAT1 size: " + std::to_string(this->FAT_1.size()) + "\n"
-        + "FAT2 offset: " + std::to_string(this->FAT_2_offset) + "\n"
-        + "FAT2 size: " + std::to_string(this->FAT_2.size()) + "\n"
-        + "User data offset: " + std::to_string(this->user_data_offset)+"\n"
+        + "FAT1 offset: "+std::to_string(this->boot_sector->getFatOffset(1))+"\n"
+        + "FAT1 size (in sectors): " + std::to_string(this->FAT_1.size()) + "\n"
+        + "FAT2 offset: " + std::to_string(this->boot_sector->getFatOffset(2)) + "\n"
+        + "FAT2 size (in sectors): " + std::to_string(this->FAT_2.size()) + "\n"
+        + "User data offset: " + std::to_string(this->boot_sector->getUserDataOffset())+"\n"
         + "\n|| FAT32 INFO END ||\n";
 }
 
 //class FILE_ENTRY
 FILE_ENTRY::FILE_ENTRY(unsigned char* data, unsigned int entry_number)
 {
-    std::copy(data + entry_number * 32 + 11, data + entry_number * 32 + 12, &this->dir_atrribute);
-    if (this->dir_atrribute == 0x10)
-        this->isFolder = true;
-    else
-        this->isFolder = false;
     std::fill(this->name, this->name + 12, 0);
     std::copy(data+entry_number*32, data + entry_number*32 + 11, this->name);
-    if (this->name[0] == 0xE5)
-        this->isDeleted = true;
-    else
-        this->isDeleted = false;
+    std::copy(data + entry_number * 32 + 11, data + entry_number * 32 + 12, &this->dir_atrribute);
+    this->setStartingCluster(data, entry_number);
     unsigned char buffer[4];
-    unsigned char clusterLow[2];
-    unsigned char clusterHigh[2];
-    std::copy(data + entry_number * 32 + 26, data + entry_number * 32 + 28, clusterLow);
-    std::copy(data + entry_number * 32 + 20, data + entry_number * 32 + 22, clusterHigh);
-    std::copy(clusterLow, clusterLow + 2, buffer);
-    std::copy(clusterHigh, clusterHigh + 2, buffer + 2);
-    this->starting_cluster = convertBytesToInt(buffer, 4);
     std::copy(data + entry_number * 32 + 28, data + entry_number * 32 + 32, buffer);
     this->size = convertBytesToInt(buffer, 4);
 }
+
+bool FILE_ENTRY::isFolder()
+{
+    if (this->dir_atrribute == 0x10)
+        return true;
+    else
+        return false;
+}
+
+bool FILE_ENTRY::isDeleted()
+{
+    if (this->name[0] == 0xE5)
+        return true;
+    else
+        return false;
+}
+
+bool FILE_ENTRY::setStartingCluster(unsigned char* data, unsigned int entry_number)
+{
+    unsigned char buffer[4];
+    std::copy(data + entry_number * 32 + 26, data + entry_number * 32 + 28, buffer);
+    std::copy(data + entry_number * 32 + 20, data + entry_number * 32 + 22, buffer+2);
+    this->starting_cluster = convertBytesToInt(buffer, 4);
+    return true;
+}
+
 
 std::string FILE_ENTRY::toString()
 {
     return "= FILE ENTRY START =\n"
         "Name: "+std::string((char*)this->name) + "\n"
-        + "Is deleted: " + (this->isDeleted ? "true" : "false") + "\n"
-        + "Is folder: " + (this->isFolder ? "true" : "false") + "\n"
+        + "Is deleted: " + (this->isDeleted() ? "true" : "false") + "\n"
+        + "Is folder: " + (this->isFolder() ? "true" : "false") + "\n"
         + "Starting cluster: " + std::to_string(this->starting_cluster) + "\n"
         + "Size: "+std::to_string(this->size) + "\n"
         + "\n= FILE ENTRY END =\n";
