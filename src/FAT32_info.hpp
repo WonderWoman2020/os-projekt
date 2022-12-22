@@ -9,16 +9,21 @@
 #include "file_entry.hpp"
 
 
+/*class DELETED_FILES_READER
+{
+
+};*/
+
 class FAT_TABLE
 {
 public:
     unsigned char* entries;
     unsigned int size;
     FAT_TABLE(unsigned char* data, unsigned int size);
-    int getNextFileClusterNumber(int cluster_number);
-    bool isLastFileCluster(int cluster_number);
-    bool isFreeCluster(int cluster_number);
-    bool isBadCluster(int cluster_number);
+    unsigned int getNextFileClusterNumber(unsigned int cluster_number);
+    bool isLastFileCluster(unsigned int cluster_number);
+    bool isFreeCluster(unsigned int cluster_number);
+    bool isBadCluster(unsigned int cluster_number);
 };
 
 class FAT32_INFO
@@ -31,11 +36,11 @@ public:
 
     bool setBootSector(HANDLE hdisk);
     bool setFATs(HANDLE hdisk);
-    bool readDirEntries(HANDLE hdisk, unsigned int starting_cluster_number);
     FAT_TABLE* getFAT(short table_number);
-
-    unsigned int calculateEntryPosition(unsigned int entry_number);
-
+    bool readDirEntries(HANDLE hdisk, unsigned int starting_cluster_number);
     void showFilesEntries();
     std::string toString();
+
+private:
+    unsigned int calculateFileEntryPosition(unsigned int entry_number);
 };

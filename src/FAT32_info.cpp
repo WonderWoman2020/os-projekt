@@ -8,24 +8,36 @@ FAT_TABLE::FAT_TABLE(unsigned char* data, unsigned int size)
     this->size = size;
 }
 
-int FAT_TABLE::getNextFileClusterNumber(int cluster_number)
+unsigned int FAT_TABLE::getNextFileClusterNumber(unsigned int cluster_number)
 {
-    return 0;
+    if (this->size >= cluster_number * 4)
+        return convertBytesToInt(this->entries + cluster_number * 4, 4);
+    else
+        return 0xFFFFFFFF;
 }
 
-bool FAT_TABLE::isLastFileCluster(int cluster_number)
+bool FAT_TABLE::isLastFileCluster(unsigned int cluster_number)
 {
-    return true;
+    if ((cluster_number & 0x0FFFFFFF) >= 0x0FFFFFF8)
+        return true;
+    else
+        return false;
 }
 
-bool FAT_TABLE::isFreeCluster(int cluster_number)
+bool FAT_TABLE::isFreeCluster(unsigned int cluster_number)
 {
-    return true;
+    if ((cluster_number & 0x0FFFFFFF) == 0)
+        return true;
+    else
+        return false;
 }
 
-bool FAT_TABLE::isBadCluster(int cluster_number)
+bool FAT_TABLE::isBadCluster(unsigned int cluster_number)
 {
-    return true;
+    if ((cluster_number & 0x0FFFFFFF) == 0x0FFFFFF7)
+        return true;
+    else
+        return false;
 }
 
 
@@ -78,7 +90,7 @@ bool FAT32_INFO::readDirEntries(HANDLE hdisk, unsigned int starting_cluster_numb
 
         for (int i = 0; i < number_of_entries_in_cluster; i++)
         {
-            FILE_ENTRY* entry = new FILE_ENTRY(cluster + this->calculateEntryPosition(i));
+            FILE_ENTRY* entry = new FILE_ENTRY(cluster + this->calculateFileEntryPosition(i));
             this->files_and_dirs.push_back(entry);
             /*if (entry->isFolder)
                 readDirEntries(hdisk, entry->starting_cluster);*/
@@ -95,7 +107,7 @@ void FAT32_INFO::showFilesEntries()
         std::cout << i<< ": " << this->files_and_dirs.at(i)->toString() << std::endl;
 }
 
-unsigned int FAT32_INFO::calculateEntryPosition(unsigned int entry_number)
+unsigned int FAT32_INFO::calculateFileEntryPosition(unsigned int entry_number)
 {
     return entry_number * 32;
 }
