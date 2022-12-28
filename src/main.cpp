@@ -37,29 +37,15 @@ int main()
     //std::cout << ok << std::endl << (short)buf[510]<< ", " << (short)buf[511] << std::endl;
     //cin >> ok;
 
-
-    /*unsigned char sector[512];
-    std::copy(buf, buf + 512, sector);
-    BOOT_SECTOR_INFO boot_sector_info(sector);
-    std::cout << boot_sector_info.toString() << std::endl;*/
-
     FAT32_INFO fat32_info(hdisk);
     std::cout << fat32_info.toString() << std::endl;
 
     fat32_info.showFilesEntries();
 
-    /*for (int i = 0; i < fat32_info.files_and_dirs.size(); i++)
+    for (int i = 0; i < 100; i++)
     {
-        FILE_ENTRY* entry = fat32_info.files_and_dirs.at(i);
-        if (!entry->isFolder && entry->size > 0)
-        {
-            unsigned char* buffer = new unsigned char[entry->size];
-            readDisk(hdisk, { fat32_info.getClusterPosition(entry->starting_cluster) }, buffer, entry->size);
-            delete[] buffer;
-            //WriteFile()
-        }
-    }*/
-    
+        std::cout << fat32_info.getFAT(1)->getNextFileClusterNumber(i) << std::endl;
+    }
 
 	return 0;
 }

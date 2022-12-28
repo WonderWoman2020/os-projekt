@@ -9,10 +9,6 @@
 #include "file_entry.hpp"
 
 
-/*class DELETED_FILES_READER
-{
-
-};*/
 
 class FAT_TABLE
 {
@@ -37,10 +33,13 @@ public:
     bool setBootSector(HANDLE hdisk);
     bool setFATs(HANDLE hdisk);
     FAT_TABLE* getFAT(short table_number);
-    bool readDirEntries(HANDLE hdisk, unsigned int starting_cluster_number);
+    //bool readDirEntries(HANDLE hdisk, unsigned int starting_cluster_number);
+    bool readDirEntries2(HANDLE hdisk, FAT_TABLE* FAT, unsigned int starting_cluster_number);
+    unsigned char* readDir(HANDLE hdisk, FAT_TABLE* FAT, unsigned int starting_cluster_number);
     void showFilesEntries();
     std::string toString();
 
 private:
     unsigned int calculateFileEntryPosition(unsigned int entry_number);
+    unsigned int checkDirLengthInFAT(FAT_TABLE* FAT, unsigned int starting_cluster_number);
 };
