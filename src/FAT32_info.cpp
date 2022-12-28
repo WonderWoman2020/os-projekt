@@ -8,6 +8,18 @@ FAT_TABLE::FAT_TABLE(unsigned char* data, unsigned int size)
     this->size = size;
 }
 
+bool FAT_TABLE::isValidClusterNumber(unsigned int cluster_number)
+{
+    if (cluster_number < 2)
+        return false;
+    if (cluster_number * 4 >= this->size)
+        return false;
+    if ((cluster_number & 0x0FFFFFFF) >= 0x0FFFFFF8)
+        return false;
+
+    return true;
+}
+
 unsigned int FAT_TABLE::getNextFileClusterNumber(unsigned int cluster_number) // rozdziel na checkIfValidClusterNumber
 {
     if (cluster_number >= 2 && cluster_number * 4 <= this->size)
@@ -49,7 +61,7 @@ FAT32_INFO::FAT32_INFO(HANDLE hdisk)
     unsigned char buffer[512];
     this->setBootSector(hdisk);
     this->setFATs(hdisk);
-    this->readDirEntries2(hdisk, this->getFAT(1), this->boot_sector->getRootClusterNumber());
+    this->readDirEntries(hdisk, this->getFAT(1), this->boot_sector->getRootClusterNumber(), false);
 }
 
 
@@ -80,7 +92,7 @@ FAT_TABLE* FAT32_INFO::getFAT(short table_number)
 }
 
 
-unsigned int FAT32_INFO::checkDirLengthInFAT(FAT_TABLE* FAT, unsigned int starting_cluster_number)
+unsigned int FAT32_INFO::checkFileLengthInFAT(FAT_TABLE* FAT, unsigned int starting_cluster_number)
 {
     std::cout <<"Sprawdzany klaster: " << starting_cluster_number << std::endl;
     if (FAT->isFreeCluster(starting_cluster_number) || (starting_cluster_number & 0x0FFFFFFF) >= 0x0FFFFFF8)
@@ -98,34 +110,67 @@ unsigned int FAT32_INFO::checkDirLengthInFAT(FAT_TABLE* FAT, unsigned int starti
     return length;
 }
 
-unsigned char* FAT32_INFO::readDir(HANDLE hdisk, FAT_TABLE* FAT, unsigned int starting_cluster_number)
-{
-    unsigned int dir_length = this->checkDirLengthInFAT(FAT, starting_cluster_number);
-    std::cout << dir_length << std::endl;
-    
-    if (dir_length == 0)
-        return nullptr;  // TODO sprawdzanie czy to usuniêty folder 
-    // i czytanie tylko pierwszego klastra LUB lepiej sprawdzanie, czy to jedyne 'entry' o takim klastrze (detektyw)
-    // bo, jeœli folder usuniêto i nie zosta³ nadpisany, jest git, a jeœli zosta³ nadpisany, to jeœli przez inny folder to git (ale nie czytam usuniêtego
-    // bo sobie odczytam to samo w tym nowym), a jak przez plik to nie (bo bêd¹ losowe rzeczy w entries)
-    // czyli w sumie wystarczy sprawdzaæ, czy nie zosta³ nadpisany folder i go czytaæ tylko jeœli nie zosta³
 
-    unsigned char* directory_data = new unsigned char[dir_length* this->boot_sector->getClusterSize()];
+unsigned char* FAT32_INFO::readFileWithFAT(HANDLE hdisk, FAT_TABLE* FAT, unsigned int starting_cluster_number)
+{
+    unsigned int file_length = this->checkFileLengthInFAT(FAT, starting_cluster_number);
+    //std::cout << file_length << std::endl;
+
+    if (file_length == 0)
+        return nullptr;
+
+    unsigned char* file_data = new unsigned char[file_length * this->boot_sector->getClusterSize()];
     unsigned int cluster_number = starting_cluster_number;
 
-    for (int i = 0; i < dir_length; i++)
+    for (int i = 0; i < file_length; i++)
     {
-        readDisk(hdisk, this->boot_sector->getClusterPosition(cluster_number), directory_data + i * this->boot_sector->getClusterSize(), this->boot_sector->getClusterSize());
+        readDisk(hdisk, this->boot_sector->getClusterPosition(cluster_number), file_data + i * this->boot_sector->getClusterSize(), this->boot_sector->getClusterSize());
         cluster_number = FAT->getNextFileClusterNumber(cluster_number);
     }
 
-    return directory_data;
+    return file_data;
 }
 
-bool FAT32_INFO::readDirEntries2(HANDLE hdisk, FAT_TABLE* FAT, unsigned int starting_cluster_number)
+unsigned char* FAT32_INFO::readDeletedFile(HANDLE hdisk, FAT_TABLE* FAT, unsigned int starting_cluster_number)
 {
-    unsigned char* directory_data = this->readDir(hdisk, FAT, starting_cluster_number);
-    unsigned int dir_length = this->checkDirLengthInFAT(FAT, starting_cluster_number);
+    return nullptr;
+}
+
+unsigned char* FAT32_INFO::readFile(HANDLE hdisk, FAT_TABLE* FAT, unsigned int starting_cluster_number, bool isDeleted)
+{
+    if (isDeleted)
+        return this->readDeletedFile(hdisk, FAT, starting_cluster_number);
+    else
+        return this->readFileWithFAT(hdisk, FAT, starting_cluster_number);
+}
+
+bool FAT32_INFO::checkIfFileIsADirectory(HANDLE hdisk, FAT_TABLE* FAT, unsigned int starting_cluster_number)
+{
+    if (!FAT->isValidClusterNumber(starting_cluster_number))
+        return false;
+
+    if (starting_cluster_number == this->boot_sector->getRootClusterNumber())
+        return true;
+
+    unsigned char* file_data = new unsigned char[this->boot_sector->getClusterSize()];
+    readDisk(hdisk, this->boot_sector->getClusterPosition(starting_cluster_number), file_data, this->boot_sector->getClusterSize());
+    FILE_ENTRY* entry = new FILE_ENTRY(file_data);
+    if (entry->name[0] == '.' && entry->isFolder())
+        return true;
+
+    return false;
+}
+
+bool FAT32_INFO::readDirEntries(HANDLE hdisk, FAT_TABLE* FAT, unsigned int starting_cluster_number, bool isDeleted) //FILE_ENTRY* zamiast starting_cluster_number i isDeleted
+{
+    if (!this->checkIfFileIsADirectory(hdisk, FAT, starting_cluster_number))
+        return false;
+
+    unsigned char* directory_data = this->readFile(hdisk, FAT, starting_cluster_number, isDeleted);
+    if (directory_data == nullptr)
+        return false;
+
+    unsigned int dir_length = this->checkFileLengthInFAT(FAT, starting_cluster_number);
     unsigned int number_of_entries = (dir_length * this->boot_sector->getClusterSize()) / 32;
 
     for(int i = 0; i<number_of_entries; i++)
@@ -135,8 +180,8 @@ bool FAT32_INFO::readDirEntries2(HANDLE hdisk, FAT_TABLE* FAT, unsigned int star
             break;
 
         this->files_and_dirs.push_back(entry);
-        if (entry->isFolder() && !entry->isDeleted() && entry->starting_cluster != starting_cluster_number && entry->name[0] != '.')
-            readDirEntries2(hdisk, FAT, entry->starting_cluster);
+        if (entry->isFolder() && entry->name[0] != '.')
+            readDirEntries(hdisk, FAT, entry->starting_cluster, entry->isDeleted());
 
     }
     delete[] directory_data;

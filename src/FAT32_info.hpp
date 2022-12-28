@@ -16,6 +16,7 @@ public:
     unsigned char* entries;
     unsigned int size;
     FAT_TABLE(unsigned char* data, unsigned int size);
+    bool isValidClusterNumber(unsigned int cluster_number);
     unsigned int getNextFileClusterNumber(unsigned int cluster_number);
     bool isLastFileCluster(unsigned int cluster_number);
     bool isFreeCluster(unsigned int cluster_number);
@@ -33,13 +34,15 @@ public:
     bool setBootSector(HANDLE hdisk);
     bool setFATs(HANDLE hdisk);
     FAT_TABLE* getFAT(short table_number);
-    //bool readDirEntries(HANDLE hdisk, unsigned int starting_cluster_number);
-    bool readDirEntries2(HANDLE hdisk, FAT_TABLE* FAT, unsigned int starting_cluster_number);
-    unsigned char* readDir(HANDLE hdisk, FAT_TABLE* FAT, unsigned int starting_cluster_number);
+    bool readDirEntries(HANDLE hdisk, FAT_TABLE* FAT, unsigned int starting_cluster_number, bool isDeleted);
+    unsigned char* readFile(HANDLE hdisk, FAT_TABLE* FAT, unsigned int starting_cluster_number, bool isDeleted);
+    unsigned int checkFileLengthInFAT(FAT_TABLE* FAT, unsigned int starting_cluster_number);
+    bool checkIfFileIsADirectory(HANDLE hdisk, FAT_TABLE* FAT, unsigned int starting_cluster_number);
     void showFilesEntries();
     std::string toString();
 
 private:
     unsigned int calculateFileEntryPosition(unsigned int entry_number);
-    unsigned int checkDirLengthInFAT(FAT_TABLE* FAT, unsigned int starting_cluster_number);
+    unsigned char* readFileWithFAT(HANDLE hdisk, FAT_TABLE* FAT, unsigned int starting_cluster_number);
+    unsigned char* readDeletedFile(HANDLE hdisk, FAT_TABLE* FAT, unsigned int starting_cluster_number);
 };
