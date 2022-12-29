@@ -138,7 +138,7 @@ unsigned char* FAT32_INFO::readDeletedFile(HANDLE hdisk, FAT_TABLE* FAT, FILE_EN
     if(file_entry == nullptr)
         return nullptr;
 
-    if (file_entry->isFolder())
+    if (file_entry->isFolder()) //przepe³niæ jakiœ folder i sprawdziæ jak siê zapisze? czy w kolejnym klastrze bêd¹ te¿ foldery '.' i '..'
     {
         if (!FAT->isFreeCluster(file_entry->starting_cluster))
             return nullptr;
@@ -149,13 +149,22 @@ unsigned char* FAT32_INFO::readDeletedFile(HANDLE hdisk, FAT_TABLE* FAT, FILE_EN
     }
 
     unsigned char* file_data = new unsigned char[file_entry->size];
+    //TODO if klaster jest obecnie nie zajêty przez istniej¹cy plik w FAT - sprawdzenie rozmiaru usunietego
+    // pliku jako ile niezajêtych klastrow zajmuje w granicach deklarowanego rozmiaru
     unsigned int file_length = std::ceil(file_entry->size / this->boot_sector->getClusterSize());
     unsigned int cluster_number = file_entry->starting_cluster;
     for (int i = 0; i < file_length; i++)
     {
-        //TODO if klaster jest obecnie nie zajêty przez istniej¹cy plik w FAT
-        readDisk(hdisk, this->boot_sector->getClusterPosition(cluster_number), file_data + i * this->boot_sector->getClusterSize(), this->boot_sector->getClusterSize());
-        cluster_number++;
+        if (i == (file_length - 1))
+        {
+            unsigned int remaining_bytes = file_entry->size - file_length * this->boot_sector->getClusterSize();
+            readDisk(hdisk, this->boot_sector->getClusterPosition(cluster_number), file_data + i * this->boot_sector->getClusterSize(), remaining_bytes);
+        }
+        else
+        {
+            readDisk(hdisk, this->boot_sector->getClusterPosition(cluster_number), file_data + i * this->boot_sector->getClusterSize(), this->boot_sector->getClusterSize());
+            cluster_number++;
+        }
     }
 
     return file_data;
