@@ -140,6 +140,9 @@ unsigned char* FAT32_INFO::readDeletedFile(HANDLE hdisk, FAT_TABLE* FAT, FILE_EN
 
     if (file_entry->isFolder())
     {
+        if (!FAT->isFreeCluster(file_entry->starting_cluster))
+            return nullptr;
+
         unsigned char* file_data = new unsigned char[this->boot_sector->getClusterSize()];
         readDisk(hdisk, this->boot_sector->getClusterPosition(file_entry->starting_cluster), file_data, this->boot_sector->getClusterSize());
         return file_data;
