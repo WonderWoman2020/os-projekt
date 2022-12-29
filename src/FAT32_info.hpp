@@ -34,15 +34,15 @@ public:
     bool setBootSector(HANDLE hdisk);
     bool setFATs(HANDLE hdisk);
     FAT_TABLE* getFAT(short table_number);
-    bool readDirEntries(HANDLE hdisk, FAT_TABLE* FAT, unsigned int starting_cluster_number, bool isDeleted);
-    unsigned char* readFile(HANDLE hdisk, FAT_TABLE* FAT, unsigned int starting_cluster_number, bool isDeleted);
+    bool readDirEntries(HANDLE hdisk, FAT_TABLE* FAT, FILE_ENTRY * dir_entry);
+    unsigned char* readFile(HANDLE hdisk, FAT_TABLE* FAT, FILE_ENTRY* file_entry);
     unsigned int checkFileLengthInFAT(FAT_TABLE* FAT, unsigned int starting_cluster_number);
-    bool checkIfFileIsADirectory(HANDLE hdisk, FAT_TABLE* FAT, unsigned int starting_cluster_number);
+    bool checkIfFileIsAValidDirectory(HANDLE hdisk, FAT_TABLE* FAT, unsigned int starting_cluster_number);
     void showFilesEntries();
     std::string toString();
 
 private:
     unsigned int calculateFileEntryPosition(unsigned int entry_number);
-    unsigned char* readFileWithFAT(HANDLE hdisk, FAT_TABLE* FAT, unsigned int starting_cluster_number);
-    unsigned char* readDeletedFile(HANDLE hdisk, FAT_TABLE* FAT, unsigned int starting_cluster_number);
+    unsigned char* readFileWithFAT(HANDLE hdisk, FAT_TABLE* FAT, FILE_ENTRY* file_entry);
+    unsigned char* readDeletedFile(HANDLE hdisk, FAT_TABLE* FAT, FILE_ENTRY* file_entry);
 };
