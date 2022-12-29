@@ -115,6 +115,12 @@ unsigned char* FAT32_INFO::readFileWithFAT(HANDLE hdisk, FAT_TABLE* FAT, FILE_EN
 {
     unsigned int starting_cluster = (file_entry == nullptr ? this->boot_sector->getRootClusterNumber() : file_entry->starting_cluster);
 
+    if (file_entry != nullptr) //nowe
+    {
+        if (!file_entry->isFolder() && (file_entry->size == 0 || file_entry->size == 0xFFFFFFFF))
+            return nullptr;
+    }
+
     unsigned int file_length = this->checkFileLengthInFAT(FAT, starting_cluster);
     //std::cout << file_length << std::endl;
 
@@ -124,6 +130,8 @@ unsigned char* FAT32_INFO::readFileWithFAT(HANDLE hdisk, FAT_TABLE* FAT, FILE_EN
     unsigned char* file_data = new unsigned char[file_length * this->boot_sector->getClusterSize()];
     unsigned int cluster_number = starting_cluster;
 
+
+    // TODO te¿ dodaæ ucinanie koñcówki pliku, jeœli to nie folder? w sumie wystarczy na etapie zapisywania podaæ ile bajtów chcê zapisaæ
     for (int i = 0; i < file_length; i++)
     {
         readDisk(hdisk, this->boot_sector->getClusterPosition(cluster_number), file_data + i * this->boot_sector->getClusterSize(), this->boot_sector->getClusterSize());
@@ -147,6 +155,9 @@ unsigned char* FAT32_INFO::readDeletedFile(HANDLE hdisk, FAT_TABLE* FAT, FILE_EN
         readDisk(hdisk, this->boot_sector->getClusterPosition(file_entry->starting_cluster), file_data, this->boot_sector->getClusterSize());
         return file_data;
     }
+
+    if (file_entry->size == 0 || file_entry->size == 0xFFFFFFFF) //nowe
+        return nullptr;
 
     unsigned char* file_data = new unsigned char[file_entry->size];
     //TODO if klaster jest obecnie nie zajêty przez istniej¹cy plik w FAT - sprawdzenie rozmiaru usunietego
