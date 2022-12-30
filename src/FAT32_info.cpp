@@ -159,7 +159,8 @@ unsigned char* FAT32_INFO::readDeletedFile(HANDLE hdisk, FAT_TABLE* FAT, FILE_EN
     if (file_entry->size == 0 || file_entry->size == 0xFFFFFFFF) //nowe
         return nullptr;
 
-    unsigned char* file_data = new unsigned char[file_entry->size];
+    unsigned char* file_data = new unsigned char[file_entry->size+1];
+    std::fill(file_data, file_data + file_entry->size + 1, 0);
     //TODO if klaster jest obecnie nie zaj皻y przez istniej鉍y plik w FAT - sprawdzenie rozmiaru usunietego
     // pliku jako ile niezaj皻ych klastrow zajmuje w granicach deklarowanego rozmiaru
 
@@ -168,24 +169,36 @@ unsigned char* FAT32_INFO::readDeletedFile(HANDLE hdisk, FAT_TABLE* FAT, FILE_EN
         file_length = 1;
     else
         file_length = std::ceil(file_entry->size / this->boot_sector->getClusterSize());*/
-    unsigned int file_length = std::ceil(file_entry->size / this->boot_sector->getClusterSize());
+    unsigned int file_length = std::ceil((double) file_entry->size / (double) this->boot_sector->getClusterSize());
+    std::cout << "Ile klastr闚 zostanie odczytanych: " << file_length << std::endl;
     unsigned int cluster_number = file_entry->starting_cluster;
     for (int i = 0; i < file_length; i++)
     {
         if (i == (file_length - 1))
         {
             unsigned int remaining_bytes = file_entry->size - (file_length-1) * this->boot_sector->getClusterSize(); //poprawka -1 file_length
-            readDisk(hdisk, this->boot_sector->getClusterPosition(cluster_number), file_data + i * this->boot_sector->getClusterSize(), remaining_bytes); //czy nie klaster ca造?
+
+            unsigned char* buffer = new unsigned char[this->boot_sector->getClusterSize()];
+            std::fill(buffer, buffer + this->boot_sector->getClusterSize(), 0);
+
+            //int read = readDisk(hdisk, this->boot_sector->getClusterPosition(cluster_number), file_data + i * this->boot_sector->getClusterSize(), remaining_bytes); //czy nie klaster ca造?
+            int read = readDisk(hdisk, this->boot_sector->getClusterPosition(cluster_number), buffer, this->boot_sector->getClusterSize()); //czy nie klaster ca造?
+            if (file_entry->size < 10)
+                std::cout << buffer << std::endl;
+            std::copy(buffer, buffer+remaining_bytes ,file_data + i * this->boot_sector->getClusterSize());
+
+            std::cout << "Bajty odczytane ko鎍闚ka: " << read << ", a by這: " << remaining_bytes << std::endl;
         }
         else
         {
-            readDisk(hdisk, this->boot_sector->getClusterPosition(cluster_number), file_data + i * this->boot_sector->getClusterSize(), this->boot_sector->getClusterSize());
+            int read = readDisk(hdisk, this->boot_sector->getClusterPosition(cluster_number), file_data + i * this->boot_sector->getClusterSize(), this->boot_sector->getClusterSize());
             cluster_number++;
+            //std::cout << "Bajty odczytane: " << read << std::endl;
         }
     }
 
-    /*if (file_entry->size < 10)
-        std::cout << file_data << std::endl;*/
+    if (file_entry->size < 10)
+        std::cout << file_data << std::endl;
 
     return file_data;
 }
