@@ -238,11 +238,18 @@ bool FAT32_INFO::readDirEntries(HANDLE hdisk, FAT_TABLE* FAT, FILE_ENTRY * dir_e
     if (!this->checkIfFileIsAValidDirectory(hdisk, FAT, starting_cluster))
         return false;
 
+    std::cout << "Klaster " << starting_cluster << " jest uznany za folder i czytany" << std::endl;
+
     unsigned char* directory_data = this->readFile(hdisk, FAT, dir_entry);
     if (directory_data == nullptr)
         return false;
 
-    unsigned int dir_length = this->checkFileLengthInFAT(FAT, starting_cluster);
+    unsigned int dir_length; //nowe
+    if (!isDeleted)
+        dir_length = this->checkFileLengthInFAT(FAT, starting_cluster);
+    else
+        dir_length = 1;
+    //unsigned int dir_length = this->checkFileLengthInFAT(FAT, starting_cluster);
     unsigned int number_of_entries = (dir_length * this->boot_sector->getClusterSize()) / 32;
 
     for(int i = 0; i<number_of_entries; i++)

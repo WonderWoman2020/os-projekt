@@ -196,6 +196,7 @@ int main()
         }
     }
 
+    //std::cout << fat32_info.getFAT(1)->getNextFileClusterNumber(14) << std::endl;
 
     CloseHandle(hdisk);
     CloseHandle(hNewFile);
