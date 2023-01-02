@@ -38,6 +38,29 @@ bool FILE_ENTRY::setStartingCluster(unsigned char* data)
     return true;
 }
 
+unsigned char* FILE_ENTRY::getFileExtension()
+{
+    if (this->isFolder())
+        return nullptr;
+
+    unsigned char* extension = new unsigned char[4];
+    std::fill(extension, extension + 4, 0);
+    std::copy(this->name + 11 - 3, this->name + 11, extension);
+
+    for (int i = 0; i < std::strlen((const char*)extension); i++)
+        extension[i] = std::tolower(extension[i]);
+
+    return extension;
+}
+
+unsigned char* FILE_ENTRY::getFileName()
+{
+    unsigned char* name = new unsigned char[9];
+    std::fill(name, name + 9, 0);
+    std::copy(this->name, this->name + 8, name);
+    return name;
+}
+
 
 std::string FILE_ENTRY::toString()
 {

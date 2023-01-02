@@ -24,28 +24,6 @@ HANDLE createEmptyFile(wchar_t* file_full_name)
     return hNewFile;
 }
 
-unsigned char* getFileExtension(unsigned char* file_name) //dodaæ do FILE_ENTRY, w zale¿noœci czy dir czy nie (lub brak rozszerzenia), zwraca rozszerzenie lub nullptr
-{
-    unsigned char* extension = new unsigned char[4];
-    std::fill(extension, extension + 4, 0);
-
-    //unsigned int len_name = std::strlen((const char*)file_name);
-    std::copy(file_name + 11 - 3, file_name + 11, extension);
-
-    for(int i=0; i<std::strlen((const char*)extension); i++)
-        extension[i] = std::tolower(extension[i]);
-
-    return extension;
-}
-
-unsigned char* getFileName(unsigned char* file_name)
-{
-    unsigned char* name = new unsigned char[9];
-    std::fill(name, name + 9, 0);
-    std::copy(file_name, file_name + 8, name);
-    return name;
-}
-
 
 int main()
 {
@@ -114,8 +92,8 @@ int main()
             if (file_data != nullptr)
             {
                 //std::cout << file_entry->toString() << std::endl;
-                unsigned char* name = getFileName(file_entry->name);
-                unsigned char* ext = getFileExtension(file_entry->name);
+                unsigned char* name = file_entry->getFileName();//getFileName(file_entry->name);
+                unsigned char* ext = file_entry->getFileExtension();//getFileExtension(file_entry->name);
                 if (name[0] == 0xE5)
                     name[0] = 'A';
                 std::cout << name << std::endl;

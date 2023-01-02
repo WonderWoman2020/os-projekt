@@ -12,5 +12,7 @@ public:
     std::string toString();
     bool isFolder();
     bool isDeleted();
+    unsigned char* getFileExtension();
+    unsigned char* getFileName();
     bool setStartingCluster(unsigned char* data);
 };
