@@ -49,7 +49,8 @@ int main()
 
 
     FILE_RECOVERER recoverer("\\\\.\\E:", "D:\\\\odzysk");
-    recoverer.recoverFiles();
+    //recoverer.recoverFiles();
+    recoverer.recoverFilesDataCarving(1000);
 
 
 	return 0;
