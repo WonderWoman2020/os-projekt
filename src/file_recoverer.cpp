@@ -13,6 +13,7 @@ FILE_RECOVERER::FILE_RECOVERER(const char* path_to_recover, const char* path_to_
         this->fat32_info = new FAT32_INFO(hdisk);
         CloseHandle(hdisk);
     }
+    this->data_carving_saves = 0;
 }
 
 void FILE_RECOVERER::recoverFiles()
@@ -41,7 +42,7 @@ void FILE_RECOVERER::recoverFiles()
         if (!this->checkIfFileExtensionValid(file_entry->getFileExtension()))
             continue;
 
-        this->saveFile(file_data, file_entry);
+        this->saveRecoveredFile(file_data, file_entry);
         delete[] file_data;
 
     }
@@ -76,7 +77,7 @@ void FILE_RECOVERER::recoverFilesDataCarving(unsigned int number_of_clusters_to_
         {
             unsigned int starting_cluster = i;
             unsigned int ending_cluster = i;
-            std::cout << "Znaleziono pocz¹tek png" << std::endl;
+            std::cout << "Znaleziono pocz¹tek png, klaster " << starting_cluster << std::endl;
             bool iend_found = false;
             unsigned int checked_size = 0;
             while (!iend_found && checked_size < (2 ^ 20))
@@ -85,7 +86,7 @@ void FILE_RECOVERER::recoverFilesDataCarving(unsigned int number_of_clusters_to_
                 auto index = data.find(iend_png_string);
                 if (index != std::string::npos)
                 {
-                    std::cout << "Znaleziono koniec png" << std::endl;
+                    std::cout << "Znaleziono koniec png, klaster " << ending_cluster << std::endl;
                     iend_found = true;
                     ending_cluster = i;
                     checked_size = checked_size + (unsigned int)index + std::strlen((const char*)this->png_iend);
@@ -97,11 +98,20 @@ void FILE_RECOVERER::recoverFilesDataCarving(unsigned int number_of_clusters_to_
             }
             if (iend_found)
             {
-                unsigned char* file_data = new unsigned char[checked_size+1];
-                std::fill(file_data, file_data + checked_size + 1, 0);
+                
+                unsigned int size_to_read = 0;
+                if (checked_size < this->fat32_info->boot_sector->getClusterSize())
+                    size_to_read = this->fat32_info->boot_sector->getClusterSize();
+                else
+                    size_to_read = checked_size;
 
-                //readDisk(hdisk, this->fat32_info->boot_sector->getClusterPosition(starting_cluster), file_data, checked_size);
+                unsigned char* file_data = new unsigned char[size_to_read];
 
+                std::fill(file_data, file_data + size_to_read, 0);
+
+                readDisk(hdisk, this->fat32_info->boot_sector->getClusterPosition(starting_cluster), file_data, size_to_read);
+
+                this->saveRecoveredFile(file_data, checked_size, (unsigned char*)"png");
 
                 delete[] file_data;
             }
@@ -134,18 +144,34 @@ HANDLE FILE_RECOVERER::openDisk(wchar_t* path)
     return hdisk;
 }
 
-bool FILE_RECOVERER::saveFile(unsigned char* file_data, FILE_ENTRY* file_entry)
+bool FILE_RECOVERER::saveRecoveredFile(unsigned char* file_data, FILE_ENTRY* file_entry)
 {
     if (file_data == nullptr || file_entry == nullptr)
         return false;
 
-    wchar_t* file_full_name_to_save = this->createFilePath(this->path_to_save, file_entry);
-    HANDLE hNewFileToSave = this->createEmptyFile(file_full_name_to_save);
+    wchar_t* file_name = this->createFileName(file_entry);
+    wchar_t* file_full_name_to_save = this->createFilePath(this->path_to_save, file_name);
+    return this->saveFile(file_data, file_entry->size, file_full_name_to_save);
+}
+
+bool FILE_RECOVERER::saveRecoveredFile(unsigned char* file_data, unsigned int data_size, unsigned char* ext)
+{
+    if (file_data == nullptr || ext == nullptr)
+        return false;
+
+    wchar_t* file_name = this->createFileName(ext);
+    wchar_t* file_full_name_to_save = this->createFilePath(this->path_to_save, file_name);
+    return this->saveFile(file_data, data_size, file_full_name_to_save);
+}
+
+bool FILE_RECOVERER::saveFile(unsigned char* file_data, unsigned int data_size, wchar_t* file_path)
+{
+    HANDLE hNewFileToSave = this->createEmptyFile(file_path);
     if (hNewFileToSave == INVALID_HANDLE_VALUE)
         return false;
 
     DWORD bytesWritten;
-    WriteFile(hNewFileToSave, file_data, file_entry->size, &bytesWritten, nullptr);
+    WriteFile(hNewFileToSave, file_data, data_size, &bytesWritten, nullptr);
     CloseHandle(hNewFileToSave);
 
     return true;
@@ -179,14 +205,30 @@ wchar_t* FILE_RECOVERER::createFileName(FILE_ENTRY* file_entry)
     return file_name;
 }
 
-wchar_t* FILE_RECOVERER::createFilePath(wchar_t* path_to_save, FILE_ENTRY* file_entry)
+wchar_t* FILE_RECOVERER::createFilePath(wchar_t* path_to_save, wchar_t* file_name)
 {
     wchar_t* backslash = WCHAR_T_CONVERTER::convert("\\\\");
-    wchar_t* file_name_to_save = this->createFileName(file_entry);
+    //wchar_t* file_name_to_save = this->createFileName(file_entry);
     wchar_t* file_full_name_to_save = WCHAR_T_CONVERTER::concatenate(this->path_to_save, backslash);
-    file_full_name_to_save = WCHAR_T_CONVERTER::concatenate(file_full_name_to_save, file_name_to_save);
-    WCHAR_T_CONVERTER::print(file_name_to_save);
+    file_full_name_to_save = WCHAR_T_CONVERTER::concatenate(file_full_name_to_save, file_name);
+    WCHAR_T_CONVERTER::print(file_name);
     WCHAR_T_CONVERTER::print(file_full_name_to_save);
 
     return file_full_name_to_save;
+}
+
+wchar_t* FILE_RECOVERER::createFileName(unsigned char* ext)
+{
+    wchar_t* generated_name = WCHAR_T_CONVERTER::convert("DATA_CARVING_");
+    std::string temp_number = std::to_string(this->data_carving_saves);
+    unsigned char* number = new unsigned char[11];
+    std::fill(number, number + 11, 0);
+    std::strcpy((char*)number, temp_number.c_str());
+    generated_name = WCHAR_T_CONVERTER::concatenate(generated_name, WCHAR_T_CONVERTER::convert((const char*)number));
+    wchar_t* dot = WCHAR_T_CONVERTER::convert(".");
+    wchar_t* wide_ext = WCHAR_T_CONVERTER::convert((const char*)ext);
+    generated_name = WCHAR_T_CONVERTER::concatenate(generated_name, dot);
+    generated_name = WCHAR_T_CONVERTER::concatenate(generated_name, wide_ext);
+    this->data_carving_saves++;
+    return generated_name;
 }
