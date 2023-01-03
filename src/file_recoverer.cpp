@@ -65,7 +65,7 @@ void FILE_RECOVERER::recoverFilesDataCarving(unsigned int number_of_clusters_to_
     if (number_of_clusters_to_check < number_of_clusters)
         number_of_clusters = number_of_clusters_to_check;
 
-    std::string iend_png_string = std::string((const char*)this->png_iend);
+    std::string iend_png_string = std::string((const char*)this->png_iend, 12);
     unsigned char* data_for_checking = new unsigned char[this->fat32_info->boot_sector->getClusterSize()];
     unsigned char* possible_signature = new unsigned char[9];
     std::fill(possible_signature, possible_signature + 9, 0);
@@ -80,16 +80,18 @@ void FILE_RECOVERER::recoverFilesDataCarving(unsigned int number_of_clusters_to_
             std::cout << "Znaleziono pocz¹tek png, klaster " << starting_cluster << std::endl;
             bool iend_found = false;
             unsigned int checked_size = 0;
-            while (!iend_found && checked_size < (2 ^ 20))
+            unsigned int file_size_limit = 2 << 20;
+            std::cout << "File size limit: " << file_size_limit << std::endl;
+            while (!iend_found && checked_size < file_size_limit)
             {
-                std::string data = std::string((const char*)data_for_checking);
+                std::string data = std::string((const char*)data_for_checking, this->fat32_info->boot_sector->getClusterSize());
                 auto index = data.find(iend_png_string);
                 if (index != std::string::npos)
                 {
-                    std::cout << "Znaleziono koniec png, klaster " << ending_cluster << std::endl;
-                    iend_found = true;
                     ending_cluster = i;
-                    checked_size = checked_size + (unsigned int)index + std::strlen((const char*)this->png_iend);
+                    std::cout << "Znaleziono koniec png, klaster " << ending_cluster << ", pozycja w napisie: " << index << std::endl;
+                    iend_found = true;             
+                    checked_size = checked_size + (unsigned int)index + 12;
                     break;
                 }
                 checked_size = checked_size + this->fat32_info->boot_sector->getClusterSize();
@@ -98,25 +100,37 @@ void FILE_RECOVERER::recoverFilesDataCarving(unsigned int number_of_clusters_to_
             }
             if (iend_found)
             {
-                
-                unsigned int size_to_read = 0;
-                if (checked_size < this->fat32_info->boot_sector->getClusterSize())
-                    size_to_read = this->fat32_info->boot_sector->getClusterSize();
-                else
-                    size_to_read = checked_size;
 
-                unsigned char* file_data = new unsigned char[size_to_read];
+                unsigned int length_in_clusters = std::ceil((double)checked_size / (double)this->fat32_info->boot_sector->getClusterSize());
+                unsigned char* file_data = new unsigned char[checked_size];
+                std::fill(file_data, file_data + checked_size, 0);
+                for (int a = 0; a < length_in_clusters; a++)
+                {
+                    if (a == length_in_clusters - 1)
+                    {
+                        unsigned int remaining_bytes = checked_size - (length_in_clusters - 1) * this->fat32_info->boot_sector->getClusterSize();
 
-                std::fill(file_data, file_data + size_to_read, 0);
+                        unsigned char* buffer = new unsigned char[this->fat32_info->boot_sector->getClusterSize()];
+                        std::fill(buffer, buffer + this->fat32_info->boot_sector->getClusterSize(), 0);
 
-                readDisk(hdisk, this->fat32_info->boot_sector->getClusterPosition(starting_cluster), file_data, size_to_read);
-
+                        int read = readDisk(hdisk, this->fat32_info->boot_sector->getClusterPosition(starting_cluster+a), buffer, this->fat32_info->boot_sector->getClusterSize());
+                        std::copy(buffer, buffer + remaining_bytes, file_data + a * this->fat32_info->boot_sector->getClusterSize());
+                        std::cout << "Bajty odczytane koñcówka: " << read << ", a by³o: " << remaining_bytes << std::endl;
+                    }
+                    else
+                    {
+                        readDisk(hdisk, this->fat32_info->boot_sector->getClusterPosition(starting_cluster+a),
+                            file_data+a* this->fat32_info->boot_sector->getClusterSize(), this->fat32_info->boot_sector->getClusterSize());
+                    }
+                }
+                std::cout << "Ile bajtów png: " << checked_size << std::endl;
                 this->saveRecoveredFile(file_data, checked_size, (unsigned char*)"png");
 
                 delete[] file_data;
             }
         }
     }
+    CloseHandle(hdisk);
 
 }
 
