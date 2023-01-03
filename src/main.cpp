@@ -5,25 +5,10 @@
 
 #include <fstream>
 
-//#include"FAT32_info.hpp"
 #include"helper_functions.hpp"
-//#include "wchar_t_converter.hpp"
 #include "file_recoverer.hpp"
 
 using namespace std;
-
-
-/*HANDLE createEmptyFile(wchar_t* file_full_name)
-{
-    HANDLE hNewFile = CreateFile(file_full_name,
-        GENERIC_WRITE,
-        FILE_SHARE_READ | FILE_SHARE_WRITE,
-        nullptr,
-        OPEN_ALWAYS,
-        FILE_ATTRIBUTE_NORMAL, NULL);
-
-    return hNewFile;
-}*/
 
 
 int main()
@@ -54,9 +39,7 @@ int main()
 
     FAT32_INFO fat32_info(hdisk);
     std::cout << fat32_info.toString() << std::endl;
-
     fat32_info.showFilesEntries();
-
     CloseHandle(hdisk);
 
     /*for (int i = 0; i < 100; i++)
@@ -66,7 +49,6 @@ int main()
 
 
     FILE_RECOVERER recoverer("\\\\.\\E:", "D:\\\\odzysk");
-
     recoverer.recoverFiles();
 
 

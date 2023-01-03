@@ -30,52 +30,20 @@ void FILE_RECOVERER::recoverFiles()
     for (int i = 0; i < this->fat32_info->files_and_dirs.size(); i++)
     {
         FILE_ENTRY* file_entry = this->fat32_info->files_and_dirs.at(i);
-        if (!file_entry->isFolder())
-        {
-            unsigned char* file_data = this->fat32_info->readFile(hdisk, this->fat32_info->getFAT(1), file_entry);
-            if (file_data != nullptr)
-            {
-                //std::cout << file_entry->toString() << std::endl;
-                unsigned char* name = file_entry->getFileName();//getFileName(file_entry->name);
-                unsigned char* ext = file_entry->getFileExtension();//getFileExtension(file_entry->name);
-                if (name[0] == 0xE5)
-                    name[0] = 'A';
-                std::cout << name << std::endl;
-                std::cout << ext << std::endl;
+        if (file_entry->isFolder())
+            continue;
 
-                if (std::strlen((const char*)ext) != 0 && ext[0] != ' ') // spacje s¹ w rozszerzeniu .gitignore, trzeba do niego poprawiæ albo go ignorowaæ
-                {
-                    std::cout << "Mo¿na zapisywaæ " << std::strlen((const char*)ext) << std::endl;
-                    wchar_t* backslash = WCHAR_T_CONVERTER::convert("\\\\");
-                    wchar_t* file_name_to_save = WCHAR_T_CONVERTER::convert((const char*)name);
-                    wchar_t* file_full_name_to_save = WCHAR_T_CONVERTER::concatenate(this->path_to_save, backslash);
-                    unsigned int len_name_to_save = std::find(file_name_to_save, file_name_to_save + 11, ' ') - file_name_to_save;
-                    file_full_name_to_save = WCHAR_T_CONVERTER::concatenate(file_full_name_to_save, file_name_to_save, std::wcslen(file_full_name_to_save), len_name_to_save);
-                    file_full_name_to_save = WCHAR_T_CONVERTER::concatenate(file_full_name_to_save, WCHAR_T_CONVERTER::convert("."));
-                    file_full_name_to_save = WCHAR_T_CONVERTER::concatenate(file_full_name_to_save, WCHAR_T_CONVERTER::convert((const char*)ext));
-                    WCHAR_T_CONVERTER::print(file_name_to_save);
-                    WCHAR_T_CONVERTER::print(file_full_name_to_save);
+        unsigned char* file_data = this->fat32_info->readFile(hdisk, this->fat32_info->getFAT(1), file_entry);
 
-                    HANDLE hNewFileToSave = this->createEmptyFile(file_full_name_to_save);
+        if (file_data == nullptr)
+            continue;
 
-                    /*if (hNewFileToSave == INVALID_HANDLE_VALUE) {
-                        int err = GetLastError();
-                        // report error...
-                        return -err;
-                    }*/
-                    if (hNewFileToSave == INVALID_HANDLE_VALUE)
-                        return;
+        if (!this->checkIfFileExtensionValid(file_entry->getFileExtension()))
+            continue;
 
-                    DWORD bytesWritten;
-                    WriteFile(hNewFileToSave, file_data, file_entry->size, &bytesWritten, nullptr);
+        this->saveFile(file_data, file_entry);
+        delete[] file_data;
 
-                    CloseHandle(hNewFileToSave);
-
-                }
-
-                delete[] file_data;
-            }
-        }
     }
 
     CloseHandle(hdisk);
@@ -110,4 +78,61 @@ HANDLE FILE_RECOVERER::openDisk(wchar_t* path)
         0, NULL);
 
     return hdisk;
+}
+
+bool FILE_RECOVERER::saveFile(unsigned char* file_data, FILE_ENTRY* file_entry)
+{
+    if (file_data == nullptr || file_entry == nullptr)
+        return false;
+
+    wchar_t* file_full_name_to_save = this->createFilePath(this->path_to_save, file_entry);
+    HANDLE hNewFileToSave = this->createEmptyFile(file_full_name_to_save);
+    if (hNewFileToSave == INVALID_HANDLE_VALUE)
+        return false;
+
+    DWORD bytesWritten;
+    WriteFile(hNewFileToSave, file_data, file_entry->size, &bytesWritten, nullptr);
+    CloseHandle(hNewFileToSave);
+
+    return true;
+}
+
+bool FILE_RECOVERER::checkIfFileExtensionValid(unsigned char* ext)
+{
+    if (ext == nullptr)
+        return false;
+
+    if (std::strlen((const char*)ext) == 0 || ext[0] == ' ')
+        return false;
+
+    return true;
+}
+
+wchar_t* FILE_RECOVERER::createFileName(FILE_ENTRY* file_entry)
+{
+    unsigned char* name = file_entry->getFileName();
+    unsigned char* ext = file_entry->getFileExtension();
+    if (name[0] == 0xE5)
+        name[0] = 'A';
+
+    unsigned int len_name_to_save = std::find(name, name + 11, ' ') - name;
+    wchar_t* wide_name = WCHAR_T_CONVERTER::convert((const char*)name);
+    wchar_t* wide_ext = WCHAR_T_CONVERTER::convert((const char*)ext);
+    wchar_t* dot = WCHAR_T_CONVERTER::convert(".");
+    wide_ext = WCHAR_T_CONVERTER::concatenate(dot, wide_ext);
+    wchar_t* file_name = WCHAR_T_CONVERTER::concatenate(wide_name, wide_ext, len_name_to_save, std::wcslen(wide_ext));
+
+    return file_name;
+}
+
+wchar_t* FILE_RECOVERER::createFilePath(wchar_t* path_to_save, FILE_ENTRY* file_entry)
+{
+    wchar_t* backslash = WCHAR_T_CONVERTER::convert("\\\\");
+    wchar_t* file_name_to_save = this->createFileName(file_entry);
+    wchar_t* file_full_name_to_save = WCHAR_T_CONVERTER::concatenate(this->path_to_save, backslash);
+    file_full_name_to_save = WCHAR_T_CONVERTER::concatenate(file_full_name_to_save, file_name_to_save);
+    WCHAR_T_CONVERTER::print(file_name_to_save);
+    WCHAR_T_CONVERTER::print(file_full_name_to_save);
+
+    return file_full_name_to_save;
 }
