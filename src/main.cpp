@@ -5,14 +5,15 @@
 
 #include <fstream>
 
-#include"FAT32_info.hpp"
+//#include"FAT32_info.hpp"
 #include"helper_functions.hpp"
-#include "wchar_t_converter.hpp"
+//#include "wchar_t_converter.hpp"
+#include "file_recoverer.hpp"
 
 using namespace std;
 
 
-HANDLE createEmptyFile(wchar_t* file_full_name)
+/*HANDLE createEmptyFile(wchar_t* file_full_name)
 {
     HANDLE hNewFile = CreateFile(file_full_name,
         GENERIC_WRITE,
@@ -22,7 +23,7 @@ HANDLE createEmptyFile(wchar_t* file_full_name)
         FILE_ATTRIBUTE_NORMAL, NULL);
 
     return hNewFile;
-}
+}*/
 
 
 int main()
@@ -56,86 +57,18 @@ int main()
 
     fat32_info.showFilesEntries();
 
+    CloseHandle(hdisk);
+
     /*for (int i = 0; i < 100; i++)
     {
         std::cout << fat32_info.getFAT(1)->getNextFileClusterNumber(i) << std::endl;
     }*/
 
 
+    FILE_RECOVERER recoverer("\\\\.\\E:", "D:\\\\odzysk");
 
-    wchar_t* file_path = WCHAR_T_CONVERTER::convert("D:\\\\odzysk"); // WA¯NE!
-    CreateDirectory(file_path, nullptr);
+    recoverer.recoverFiles();
 
-    wchar_t* file_name = WCHAR_T_CONVERTER::convert("\\\\1.txt");
-    wchar_t* file_full_name = WCHAR_T_CONVERTER::concatenate(file_path, file_name);
-
-    WCHAR_T_CONVERTER::print(file_path);
-    WCHAR_T_CONVERTER::print(file_name);
-    WCHAR_T_CONVERTER::print(file_full_name);
-
-
-    HANDLE hNewFile = createEmptyFile(file_full_name);
-
-    if (hNewFile == INVALID_HANDLE_VALUE) {
-        int err = GetLastError();
-        // report error...
-        return -err;
-    }
-
-
-    for (int i = 0; i < fat32_info.files_and_dirs.size(); i++)
-    {
-        FILE_ENTRY* file_entry = fat32_info.files_and_dirs.at(i);
-        if (!file_entry->isFolder())
-        {
-            unsigned char* file_data = fat32_info.readFile(hdisk, fat32_info.getFAT(1), file_entry);
-            if (file_data != nullptr)
-            {
-                //std::cout << file_entry->toString() << std::endl;
-                unsigned char* name = file_entry->getFileName();//getFileName(file_entry->name);
-                unsigned char* ext = file_entry->getFileExtension();//getFileExtension(file_entry->name);
-                if (name[0] == 0xE5)
-                    name[0] = 'A';
-                std::cout << name << std::endl;
-                std::cout << ext << std::endl;
-
-                if (std::strlen((const char*)ext) != 0 && ext[0] != ' ') // spacje s¹ w rozszerzeniu .gitignore, trzeba do niego poprawiæ albo go ignorowaæ
-                {
-                    std::cout << "Mo¿na zapisywaæ " << std::strlen((const char*)ext) << std::endl;
-                    wchar_t* backslash = WCHAR_T_CONVERTER::convert("\\\\");
-                    wchar_t* file_name_to_save = WCHAR_T_CONVERTER::convert((const char*)name);
-                    wchar_t* file_full_name_to_save = WCHAR_T_CONVERTER::concatenate(file_path, backslash);
-                    unsigned int len_name_to_save = std::find(file_name_to_save, file_name_to_save+11, ' ') - file_name_to_save;
-                    file_full_name_to_save = WCHAR_T_CONVERTER::concatenate(file_full_name_to_save, file_name_to_save, std::wcslen(file_full_name_to_save), len_name_to_save);
-                    file_full_name_to_save = WCHAR_T_CONVERTER::concatenate(file_full_name_to_save, WCHAR_T_CONVERTER::convert("."));
-                    file_full_name_to_save = WCHAR_T_CONVERTER::concatenate(file_full_name_to_save, WCHAR_T_CONVERTER::convert((const char*)ext));
-                    WCHAR_T_CONVERTER::print(file_name_to_save);
-                    WCHAR_T_CONVERTER::print(file_full_name_to_save);
-
-                    HANDLE hNewFileToSave = createEmptyFile(file_full_name_to_save);
-
-                    if (hNewFileToSave == INVALID_HANDLE_VALUE) {
-                        int err = GetLastError();
-                        // report error...
-                        return -err;
-                    }
-
-                    DWORD bytesWritten;
-                    WriteFile(hNewFileToSave, file_data, file_entry->size, &bytesWritten, nullptr);
-
-                    CloseHandle(hNewFileToSave);
-
-                }
-
-                delete[] file_data;
-            }
-        }
-    }
-
-    //std::cout << fat32_info.getFAT(1)->getNextFileClusterNumber(14) << std::endl;
-
-    CloseHandle(hdisk);
-    CloseHandle(hNewFile);
 
 	return 0;
 }
