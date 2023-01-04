@@ -177,10 +177,8 @@ wchar_t* FILE_RECOVERER::createFileName(FILE_ENTRY* file_entry)
 wchar_t* FILE_RECOVERER::createFilePath(wchar_t* path_to_save, wchar_t* file_name)
 {
     wchar_t* backslash = WCHAR_T_CONVERTER::convert("\\\\");
-    //wchar_t* file_name_to_save = this->createFileName(file_entry);
     wchar_t* file_full_name_to_save = WCHAR_T_CONVERTER::concatenate(this->path_to_save, backslash);
     file_full_name_to_save = WCHAR_T_CONVERTER::concatenate(file_full_name_to_save, file_name);
-    //WCHAR_T_CONVERTER::print(file_name);
     WCHAR_T_CONVERTER::print(file_full_name_to_save);
 
     return file_full_name_to_save;
