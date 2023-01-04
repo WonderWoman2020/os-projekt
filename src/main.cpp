@@ -88,9 +88,22 @@ int main()
     std::cout << "\nPokazac informacje odczytana z systemu plikow FAT32? (T/n): ";
     std::cin >> input;
 
+    bool show_fat32_info = false;
+    if (input[0] == 'T')
+        show_fat32_info = true;
+
+    std::cout << "\nIle MB dysku przeszukac uzywajac techniki 'data carving'? (Wpisz liczbe calkowita): ";
+    std::fill(input, input + 512, 0);
+    cin >> input;
+    unsigned int data_carving_limit = std::atoi((const char*)input);
+    std::cout << data_carving_limit << std::endl;
+
     FILE_RECOVERER recoverer((const char*)path_to_recover, (const char*)path_to_save);
 
-    if (input[0] == 'T')
+    unsigned int data_carving_cluster_number_limit = data_carving_limit * 1024 * 1024 / recoverer.fat32_info->boot_sector->getClusterSize();
+    std::cout << "Zostanie przeszukanych " << data_carving_cluster_number_limit << " klastrow" << std::endl;
+
+    if (show_fat32_info)
     {
         std::cout << std::endl;
         std::cout << recoverer.fat32_info->toString() << std::endl;
@@ -100,7 +113,7 @@ int main()
     std::cout << "\nOdzyskiwanie plikow z uzyciem informacji z systemu plikow: " << std::endl;
     recoverer.recoverFiles();
     std::cout << "\nOdzyskiwanie plikow przez 'data carving': " << std::endl;
-    recoverer.recoverFilesDataCarving(1000);
+    recoverer.recoverFilesDataCarving(data_carving_cluster_number_limit);
 
 
 	return 0;
