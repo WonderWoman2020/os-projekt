@@ -10,6 +10,7 @@ public:
 	FAT32_INFO* fat32_info;
 	wchar_t* path_to_recover;
 	wchar_t* path_to_save;
+
 	unsigned int data_carving_saves;
 
 	unsigned char png_signature[9] = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, '\0'};
@@ -31,4 +32,8 @@ private:
 	wchar_t* createFilePath(wchar_t* path_to_save, wchar_t* file_name);
 	wchar_t* createFileName(FILE_ENTRY* file_entry);
 	wchar_t* createFileName(unsigned char* ext);
+
+	bool checkIfFileStart(unsigned int cluster_number, unsigned char* start_signature);
+	unsigned int findFileEndingOffset(unsigned int cluster_number, unsigned char* end_signature, unsigned int len_end_signature);
+	unsigned char* readContinuousMemoryBlock(unsigned int cluster_number, unsigned int size);
 };
