@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include<iostream>
 #include<Windows.h>
 
@@ -13,42 +14,80 @@ using namespace std;
 
 int main()
 {
+    unsigned char input[512] = { 0 };
+    unsigned char disk_name = 0;
+    bool input_valid = false;
+    while (!input_valid)
+    {
+        while (!std::isalpha(input[0]))
+        {
+            std::cout << "Z jakiego dysku FAT32 chcesz odzyskac dane? (Wpisz litere nazwy dysku, np. E): ";
+            cin >> input;
 
-    HANDLE hdisk = CreateFile(L"\\\\.\\E:",
-        GENERIC_READ,
-        FILE_SHARE_READ | FILE_SHARE_WRITE,
-        nullptr,
-        OPEN_EXISTING,
-        0, NULL);
-    if (hdisk == INVALID_HANDLE_VALUE) {
-        int err = GetLastError();
-        // report error...
-        return -err;
+            if (!std::isalpha(input[0]))
+            {
+                std::cout << "\nPodano bledne dane w miejsce nazwy dysku. Wpisz nazwe dysku jeszcze raz\n"
+                    "(Wskazowka: Upewnij sie, ze wpisujesz tylko litere bedaca nazwa dysku, bez zadnych dodatkowych znakow)" << std::endl;
+            }
+        }
+        disk_name = std::toupper(input[0]);
+        std::cout << "Wybrany dysk: " << disk_name << std::endl;
+
+        bool path_valid = false;
+
+        while (!path_valid)
+        {
+            std::cout << "\nGdzie chcesz zapisac odzyskane dane? (Podaj sciezke, np. D:\\odzyskane): ";
+            cin >> (input + 1);
+            if (disk_name == std::toupper(input[1]))
+            {
+                std::cout << "\nUwaga! Na dysku, z ktorego chcesz odzyskac dane, nie powinines nic zapisywac, poki nie przywrocisz z niego danych.\n"
+                    "Mogloby to spowodowac bezpowrotna utrate czesci plikow do odzyskania, poniewaz moglby one zostac nadpisane przez nowo zapisane dane.\n"
+                    "Wybierz inny dysk do zapisywania odzyskiwanych danych." << std::endl;
+                continue;
+            }
+            
+            if (input[2] == ':' && input[3] == '\\')
+                path_valid = true;
+            else
+                std::cout << "\nPodano bledne dane w miejsce sciezki do zapisu. Podaj sciezke jeszcze raz\n"
+                "(Wskazowka: Upewnij sie, ze wpisujesz sciezke (minimum to np. D:\\), a nie tylko nazwe dysku, na ktorym chcesz zapisac dane)" << std::endl;
+        }
+
+        std::cout << "Wybrana sciezka zapisu: " << (input + 1) << std::endl;
+        input_valid = true;
     }
 
-    LARGE_INTEGER position = { 0 };
-    BOOL ok = SetFilePointerEx(hdisk, position, nullptr, FILE_BEGIN);
-    //assert(ok);
+    std::string temp_path_to_recover = std::string("\\\\.\\") + std::string((char*)&disk_name, 1) + std::string(":");
+    unsigned char* path_to_recover = new unsigned char[10];
+    std::fill(path_to_recover, path_to_recover + 10, 0);
+    std::strcpy((char*)path_to_recover, temp_path_to_recover.c_str());
+    
+    //std::cout << path_to_recover << std::endl;
 
-    BYTE buf[65536];
-    DWORD read;
-    ok = ReadFile(hdisk, buf, 65536, &read, nullptr);
-    //assert(ok);
-    //std::cout << ok << std::endl << (short)buf[510]<< ", " << (short)buf[511] << std::endl;
-    //cin >> ok;
+    unsigned char* path_to_save = new unsigned char[2048];
+    std::fill(path_to_save, path_to_save + 2048, 0);
 
-    FAT32_INFO fat32_info(hdisk);
-    std::cout << fat32_info.toString() << std::endl;
-    fat32_info.showFilesEntries();
-    CloseHandle(hdisk);
-
-    /*for (int i = 0; i < 100; i++)
+    int j = 0;
+    for (int i = 1; i < 512; i++)
     {
-        std::cout << fat32_info.getFAT(1)->getNextFileClusterNumber(i) << std::endl;
-    }*/
+        path_to_save[j] = input[i];
+        j++;
+        if (input[i] == '\\')
+        {
+            for (int a = 0; a < 3; a++)
+            {
+                path_to_save[j] = '\\';
+                j++;
+            }
+        }
+    }
 
+    //std::cout << path_to_save << std::endl;
 
-    FILE_RECOVERER recoverer("\\\\.\\E:", "D:\\\\odzysk");
+    FILE_RECOVERER recoverer((const char*)path_to_recover, (const char*)path_to_save);
+    std::cout << recoverer.fat32_info->toString() << std::endl;
+    recoverer.fat32_info->showFilesEntries();
     recoverer.recoverFiles();
     recoverer.recoverFilesDataCarving(1000);
 
