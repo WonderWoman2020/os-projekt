@@ -98,6 +98,14 @@ int main()
     unsigned int data_carving_limit = std::atoi((const char*)input);
     std::cout << data_carving_limit << std::endl;
 
+    std::cout << "\nJaki ma byc maksymalny rozmiar (w KB) plikow szukanych uzywajac techniki 'data carving'? (Wpisz liczbe calkowita): ";
+    std::fill(input, input + 512, 0);
+    cin >> input;
+    unsigned int carving_file_size_limit = std::atoi((const char*)input);
+    std::cout << carving_file_size_limit << std::endl;
+    unsigned int file_size_limit_bytes = carving_file_size_limit * 1024;
+    std::cout << file_size_limit_bytes << std::endl;
+
     FILE_RECOVERER recoverer((const char*)path_to_recover, (const char*)path_to_save);
 
     unsigned int data_carving_cluster_number_limit = data_carving_limit * 1024 * 1024 / recoverer.fat32_info->boot_sector->getClusterSize();
@@ -113,7 +121,7 @@ int main()
     std::cout << "\nOdzyskiwanie plikow z uzyciem informacji z systemu plikow: " << std::endl;
     recoverer.recoverFiles();
     std::cout << "\nOdzyskiwanie plikow przez 'data carving': " << std::endl;
-    recoverer.recoverFilesDataCarving(data_carving_cluster_number_limit);
+    recoverer.recoverFilesDataCarving(data_carving_cluster_number_limit, file_size_limit_bytes);
 
 
 	return 0;

@@ -20,7 +20,7 @@ public:
 
 	FILE_RECOVERER(const char* path_to_recover, const char* path_to_save);
 	void recoverFiles();
-	void recoverFilesDataCarving(unsigned int number_of_clusters_to_check);
+	void recoverFilesDataCarving(unsigned int number_of_clusters_to_check, unsigned int max_file_size);
 
 private:
 	HANDLE createEmptyFile(wchar_t* file_full_name);
@@ -34,6 +34,6 @@ private:
 	wchar_t* createFileName(unsigned char* ext);
 
 	bool checkIfFileStart(unsigned int cluster_number, unsigned char* start_signature);
-	unsigned int findFileEndingOffset(unsigned int cluster_number, unsigned char* end_signature, unsigned int len_end_signature);
+	unsigned int findFileEndingOffset(unsigned int cluster_number, unsigned char* end_signature, unsigned int len_end_signature, unsigned int max_file_size);
 	unsigned char* readContinuousMemoryBlock(unsigned int cluster_number, unsigned int size);
 };

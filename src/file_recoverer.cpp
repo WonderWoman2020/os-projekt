@@ -50,7 +50,7 @@ void FILE_RECOVERER::recoverFiles()
     CloseHandle(hdisk);
 }
 
-void FILE_RECOVERER::recoverFilesDataCarving(unsigned int number_of_clusters_to_check)
+void FILE_RECOVERER::recoverFilesDataCarving(unsigned int number_of_clusters_to_check, unsigned int max_file_size)
 {
     if (this->fat32_info == nullptr)
         return;
@@ -74,7 +74,7 @@ void FILE_RECOVERER::recoverFilesDataCarving(unsigned int number_of_clusters_to_
 
         unsigned int starting_cluster = i;
         std::cout << "Znaleziono poczatek png, klaster " << starting_cluster << std::endl;
-        unsigned int checked_size = this->findFileEndingOffset(starting_cluster, this->png_iend, 12);
+        unsigned int checked_size = this->findFileEndingOffset(starting_cluster, this->png_iend, 12, max_file_size);
         if (checked_size == 0)
             continue;
 
@@ -223,7 +223,7 @@ bool FILE_RECOVERER::checkIfFileStart(unsigned int cluster_number, unsigned char
     return false;
 }
 
-unsigned int FILE_RECOVERER::findFileEndingOffset(unsigned int cluster_number, unsigned char* end_signature, unsigned int len_end_signature)
+unsigned int FILE_RECOVERER::findFileEndingOffset(unsigned int cluster_number, unsigned char* end_signature, unsigned int len_end_signature, unsigned int max_file_size)
 {
     HANDLE hdisk = this->openDisk(this->path_to_recover);
     if (hdisk == INVALID_HANDLE_VALUE)
@@ -233,7 +233,7 @@ unsigned int FILE_RECOVERER::findFileEndingOffset(unsigned int cluster_number, u
     unsigned int ending_cluster = cluster_number;
     bool iend_found = false;
     unsigned int checked_size = 0;
-    unsigned int file_size_limit = 2 << 20;
+    unsigned int file_size_limit = max_file_size;//2 << 20;
     //std::cout << "File size limit: " << file_size_limit << std::endl;
     unsigned char* data_for_checking = new unsigned char[this->fat32_info->boot_sector->getClusterSize()];
     readDisk(hdisk, this->fat32_info->boot_sector->getClusterPosition(cluster_number), data_for_checking, this->fat32_info->boot_sector->getClusterSize());
