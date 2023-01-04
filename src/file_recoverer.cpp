@@ -73,16 +73,16 @@ void FILE_RECOVERER::recoverFilesDataCarving(unsigned int number_of_clusters_to_
             continue;
 
         unsigned int starting_cluster = i;
-        std::cout << "Znaleziono pocz¹tek png, klaster " << starting_cluster << std::endl;
+        std::cout << "Znaleziono poczatek png, klaster " << starting_cluster << std::endl;
         unsigned int checked_size = this->findFileEndingOffset(starting_cluster, this->png_iend, 12);
-        if (checked_size == 0) //dopisaæ przeskoczenie sprawdzonych klastrów? ale potencjalnie to strata pliku nadpisuj¹cego pierwszy, wiêc chyba nie
+        if (checked_size == 0)
             continue;
 
         unsigned char* file_data = this->readContinuousMemoryBlock(starting_cluster, checked_size);
         if (file_data == nullptr)
             continue;
 
-        std::cout << "Ile bajtów png: " << checked_size << std::endl;
+        std::cout << "Ile bajtow png: " << checked_size << std::endl;
         this->saveRecoveredFile(file_data, checked_size, (unsigned char*)"png");
         delete[] file_data;
     }
@@ -180,7 +180,7 @@ wchar_t* FILE_RECOVERER::createFilePath(wchar_t* path_to_save, wchar_t* file_nam
     //wchar_t* file_name_to_save = this->createFileName(file_entry);
     wchar_t* file_full_name_to_save = WCHAR_T_CONVERTER::concatenate(this->path_to_save, backslash);
     file_full_name_to_save = WCHAR_T_CONVERTER::concatenate(file_full_name_to_save, file_name);
-    WCHAR_T_CONVERTER::print(file_name);
+    //WCHAR_T_CONVERTER::print(file_name);
     WCHAR_T_CONVERTER::print(file_full_name_to_save);
 
     return file_full_name_to_save;
@@ -236,7 +236,7 @@ unsigned int FILE_RECOVERER::findFileEndingOffset(unsigned int cluster_number, u
     bool iend_found = false;
     unsigned int checked_size = 0;
     unsigned int file_size_limit = 2 << 20;
-    std::cout << "File size limit: " << file_size_limit << std::endl;
+    //std::cout << "File size limit: " << file_size_limit << std::endl;
     unsigned char* data_for_checking = new unsigned char[this->fat32_info->boot_sector->getClusterSize()];
     readDisk(hdisk, this->fat32_info->boot_sector->getClusterPosition(cluster_number), data_for_checking, this->fat32_info->boot_sector->getClusterSize());
     while (!iend_found && checked_size < file_size_limit)
@@ -245,7 +245,7 @@ unsigned int FILE_RECOVERER::findFileEndingOffset(unsigned int cluster_number, u
         auto index = data.find(iend_png_string);
         if (index != std::string::npos)
         {
-            std::cout << "Znaleziono koniec png, klaster " << ending_cluster << ", pozycja w napisie: " << index << std::endl;
+            std::cout << "Znaleziono koniec png, klaster " << ending_cluster << ", pozycja: " << index << std::endl;
             iend_found = true;
             checked_size = checked_size + (unsigned int)index + len_end_signature;
             return checked_size;
@@ -282,7 +282,7 @@ unsigned char* FILE_RECOVERER::readContinuousMemoryBlock(unsigned int cluster_nu
 
             int read = readDisk(hdisk, this->fat32_info->boot_sector->getClusterPosition(cluster_number + a), buffer, this->fat32_info->boot_sector->getClusterSize());
             std::copy(buffer, buffer + remaining_bytes, file_data + a * this->fat32_info->boot_sector->getClusterSize());
-            std::cout << "Bajty odczytane koñcówka: " << read << ", a by³o: " << remaining_bytes << std::endl;
+            //std::cout << "Bajty odczytane koñcówka: " << read << ", a by³o: " << remaining_bytes << std::endl;
         }
         else
         {

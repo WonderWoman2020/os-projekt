@@ -85,10 +85,21 @@ int main()
 
     //std::cout << path_to_save << std::endl;
 
+    std::cout << "\nPokazac informacje odczytana z systemu plikow FAT32? (T/n): ";
+    std::cin >> input;
+
     FILE_RECOVERER recoverer((const char*)path_to_recover, (const char*)path_to_save);
-    std::cout << recoverer.fat32_info->toString() << std::endl;
-    recoverer.fat32_info->showFilesEntries();
+
+    if (input[0] == 'T')
+    {
+        std::cout << std::endl;
+        std::cout << recoverer.fat32_info->toString() << std::endl;
+        recoverer.fat32_info->showFilesEntries();
+    }
+
+    std::cout << "\nOdzyskiwanie plikow z uzyciem informacji z systemu plikow: " << std::endl;
     recoverer.recoverFiles();
+    std::cout << "\nOdzyskiwanie plikow przez 'data carving': " << std::endl;
     recoverer.recoverFilesDataCarving(1000);
 
 

@@ -31,7 +31,7 @@ unsigned int FAT_TABLE::getNextFileClusterNumber(unsigned int cluster_number) //
 bool FAT_TABLE::isLastFileCluster(unsigned int cluster_number)
 {
     unsigned int fat_entry_val = this->getNextFileClusterNumber(cluster_number) & 0x0FFFFFFF;
-    std::cout << fat_entry_val << std::endl;
+    //std::cout << fat_entry_val << std::endl;
     if (fat_entry_val >= 0x0FFFFFF8)
         return true;
     else
@@ -94,7 +94,7 @@ FAT_TABLE* FAT32_INFO::getFAT(short table_number)
 
 unsigned int FAT32_INFO::checkFileLengthInFAT(FAT_TABLE* FAT, unsigned int starting_cluster_number)
 {
-    std::cout <<"Sprawdzany klaster: " << starting_cluster_number << std::endl;
+    //std::cout <<"Sprawdzany klaster: " << starting_cluster_number << std::endl;
     if (FAT->isFreeCluster(starting_cluster_number) || (starting_cluster_number & 0x0FFFFFFF) >= 0x0FFFFFF8)
         return 0;
 
@@ -170,7 +170,7 @@ unsigned char* FAT32_INFO::readDeletedFile(HANDLE hdisk, FAT_TABLE* FAT, FILE_EN
     else
         file_length = std::ceil(file_entry->size / this->boot_sector->getClusterSize());*/
     unsigned int file_length = std::ceil((double) file_entry->size / (double) this->boot_sector->getClusterSize());
-    std::cout << "Ile klastr闚 zostanie odczytanych: " << file_length << std::endl;
+    //std::cout << "Ile klastr闚 zostanie odczytanych: " << file_length << std::endl;
     unsigned int cluster_number = file_entry->starting_cluster;
     for (int i = 0; i < file_length; i++)
     {
@@ -183,11 +183,11 @@ unsigned char* FAT32_INFO::readDeletedFile(HANDLE hdisk, FAT_TABLE* FAT, FILE_EN
 
             //int read = readDisk(hdisk, this->boot_sector->getClusterPosition(cluster_number), file_data + i * this->boot_sector->getClusterSize(), remaining_bytes); //czy nie klaster ca造?
             int read = readDisk(hdisk, this->boot_sector->getClusterPosition(cluster_number), buffer, this->boot_sector->getClusterSize()); //czy nie klaster ca造?
-            if (file_entry->size < 10)
-                std::cout << buffer << std::endl;
+            //if (file_entry->size < 10)
+            //    std::cout << buffer << std::endl;
             std::copy(buffer, buffer+remaining_bytes ,file_data + i * this->boot_sector->getClusterSize());
 
-            std::cout << "Bajty odczytane ko鎍闚ka: " << read << ", a by這: " << remaining_bytes << std::endl;
+            //std::cout << "Bajty odczytane ko鎍闚ka: " << read << ", a by這: " << remaining_bytes << std::endl;
         }
         else
         {
@@ -197,8 +197,8 @@ unsigned char* FAT32_INFO::readDeletedFile(HANDLE hdisk, FAT_TABLE* FAT, FILE_EN
         }
     }
 
-    if (file_entry->size < 10)
-        std::cout << file_data << std::endl;
+    //if (file_entry->size < 10)
+    //    std::cout << file_data << std::endl;
 
     return file_data;
 }
@@ -238,7 +238,7 @@ bool FAT32_INFO::readDirEntries(HANDLE hdisk, FAT_TABLE* FAT, FILE_ENTRY * dir_e
     if (!this->checkIfFileIsAValidDirectory(hdisk, FAT, starting_cluster))
         return false;
 
-    std::cout << "Klaster " << starting_cluster << " jest uznany za folder i czytany" << std::endl;
+    //std::cout << "Klaster " << starting_cluster << " jest uznany za folder i czytany" << std::endl;
 
     unsigned char* directory_data = this->readFile(hdisk, FAT, dir_entry);
     if (directory_data == nullptr)
