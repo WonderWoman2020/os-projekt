@@ -22,6 +22,9 @@ public:
 	void recoverFiles();
 	void recoverFilesDataCarving(unsigned int number_of_clusters_to_check, unsigned int max_file_size);
 
+	wchar_t* createFileName(unsigned char* ext);
+	wchar_t* createFileName(FILE_ENTRY* file_entry);
+
 private:
 	HANDLE createEmptyFile(wchar_t* file_full_name);
 	HANDLE openDisk(wchar_t* path);
@@ -30,8 +33,8 @@ private:
 	bool saveFile(unsigned char* file_data, unsigned int data_size, wchar_t* file_path);
 	bool checkIfFileExtensionValid(unsigned char* ext);
 	wchar_t* createFilePath(wchar_t* path_to_save, wchar_t* file_name);
-	wchar_t* createFileName(FILE_ENTRY* file_entry);
-	wchar_t* createFileName(unsigned char* ext);
+	//wchar_t* createFileName(FILE_ENTRY* file_entry);
+	//wchar_t* createFileName(unsigned char* ext);
 
 	bool checkIfFileStart(unsigned int cluster_number, unsigned char* start_signature);
 	unsigned int findFileEndingOffset(unsigned int cluster_number, unsigned char* end_signature, unsigned int len_end_signature, unsigned int max_file_size);

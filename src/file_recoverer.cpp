@@ -165,6 +165,8 @@ wchar_t* FILE_RECOVERER::createFileName(FILE_ENTRY* file_entry)
         name[0] = 'A';
 
     unsigned int len_name_to_save = std::find(name, name + 11, ' ') - name;
+    if (len_name_to_save > 8)
+        len_name_to_save = 8;
     wchar_t* wide_name = WCHAR_T_CONVERTER::convert((const char*)name);
     wchar_t* wide_ext = WCHAR_T_CONVERTER::convert((const char*)ext);
     wchar_t* dot = WCHAR_T_CONVERTER::convert(".");

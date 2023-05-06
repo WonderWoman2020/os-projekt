@@ -116,6 +116,20 @@ int main()
         std::cout << std::endl;
         std::cout << recoverer.fat32_info->toString() << std::endl;
         recoverer.fat32_info->showFilesEntries();
+        /*FILE_ENTRY* entry = nullptr;
+        for (int i = 0; i < recoverer.fat32_info->files_and_dirs.size(); i++)
+        {
+            entry = recoverer.fat32_info->files_and_dirs.at(i);
+            if (entry != nullptr)
+            {
+                auto ext = entry->getFileExtension();
+                if (ext == nullptr)
+                    continue;
+                auto file_name = recoverer.createFileName(entry);
+                if(file_name != nullptr)
+                    WCHAR_T_CONVERTER::print(file_name);
+            }
+        }*/
     }
 
     std::cout << "\nOdzyskiwanie plikow z uzyciem informacji z systemu plikow: " << std::endl;
@@ -123,6 +137,9 @@ int main()
     std::cout << "\nOdzyskiwanie plikow przez 'data carving': " << std::endl;
     recoverer.recoverFilesDataCarving(data_carving_cluster_number_limit, file_size_limit_bytes);
 
+    std::cout << "\nOdzyskiwanie plikow zakonczono. Aby wyjsc, nacisnij enter" << std::endl;
+    std::cin.get();
+    std::cin.get();
 
 	return 0;
 }
