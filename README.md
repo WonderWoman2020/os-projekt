@@ -20,7 +20,9 @@ Opcja odzyskiwania plików przez *data carving* jest jedynie pokazowa (na cele p
 
 ## Instrukcja uruchamiania
 
-Aby skorzystać z narzędzia, można pobrać gotowy plik wykonywalny aplikacji, najnowsze wydanie dostępne [tutaj](./../../releases), lub samodzielnie skompilować projekt, np. otwierając plik projektu `OdzyskiwaniePlikow/OdzyskiwaniePlikow.sln` w Visual Studio i naciskając F5.
+Aby skorzystać z narzędzia, można pobrać gotowy plik wykonywalny aplikacji, najnowsze wydanie dostępne [tutaj](./../../releases), a następnie kliknąć na niego 2-krotnie przyciskiem myszy.
+
+Można też samodzielnie skompilować projekt, np. otwierając plik projektu `OdzyskiwaniePlikow/OdzyskiwaniePlikow.sln` w Visual Studio i naciskając F5.
 
 ## Menu aplikacji
 
