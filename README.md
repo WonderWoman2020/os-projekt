@@ -5,8 +5,9 @@
 1. [Opis](#opis)
 2. [Instrukcja uruchamiania](#instrukcja-uruchamiania)
 3. [Menu aplikacji](#menu-aplikacji)
-4. [Formatowanie pendrive'a do testów](#formatowanie-pendrive'a-do-testów)
-4. [Znane błędy](#znane-błędy)
+4. [Efekty działania aplikacji](#efekty-działania-aplikacji)
+5. [Formatowanie pendrive'a do testów](#formatowanie-pendrive'a-do-testów)
+6. [Znane błędy](#znane-błędy)
 
 ## Opis
 
@@ -47,7 +48,7 @@ Aplikacja po uruchomieniu prosi o wprowadzenie kilku parametrów wejściowych:
 
 ![menu 5](./docs/menu5.png)
 
-**Efekty działania aplikacji**
+## Efekty działania aplikacji
 
 Jeśli wybraliśmy opcję wyświetlenia informacji z systemu plików, zobaczymy dodatkowe informacje w poniższej formie:
 
@@ -61,7 +62,7 @@ W obu przypadkach natomiast, zobaczymy jakie pliki program odnalazł i odzyskał
 
 W folderze, który podaliśmy jako miejsce zapisania wyników, pojawią się odzyskane pliki:
 
-![efekty dzialania 1](./docs/efekty-dzialania1.png)
+![efekty dzialania](./docs/efekty-dzialania.png)
 
 
 ## Formatowanie pendrive'a do testów
