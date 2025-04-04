@@ -1,4 +1,4 @@
-# os-projekt
+# Pendrive Recoverer
 
 ## Spis treści
 
