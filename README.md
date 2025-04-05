@@ -91,7 +91,7 @@ Można również wykonać formatowanie używając narzędzia CMD:
 > format DISK_LETTER /fs:FAT32 /p:0
 ```
 
-**Uwaga:** Jeśli któryś sposób formatowania się nie powiedzie i sprawi, że pendrive nie będzie się chciał otworzyć, zwykle wystarczy zrobić na nim szybki format używając wcześniej opisanej opcji z menu Windowsa, czyli klikając prawym przyciskiem myszy na pendrive i wybierając opcję `Formatuj...`, z zaznaczonym szybkim formatem. Szczęśliwego formatowania! :D
+**Uwaga:** Jeśli któryś sposób formatowania się nie powiedzie i sprawi, że pendrive nie będzie się chciał otworzyć - zwykle wystarczy zrobić na nim szybki format używając wcześniej opisanej opcji z menu Windowsa, czyli klikając prawym przyciskiem myszy na pendrive i wybierając opcję `Formatuj...`, z zaznaczonym szybkim formatem. Szczęśliwego formatowania! :D
 
 ## Znane błędy
 
