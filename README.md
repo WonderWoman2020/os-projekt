@@ -6,7 +6,7 @@
 2. [Instrukcja uruchamiania](#instrukcja-uruchamiania)
 3. [Menu aplikacji](#menu-aplikacji)
 4. [Efekty działania aplikacji](#efekty-działania-aplikacji)
-5. [Formatowanie pendrive'a do testów](#formatowanie-pendrive'a-do-testów)
+5. [Formatowanie pendrive'a do testów](#formatowanie-pendrivea-do-testów)
 6. [Znane błędy](#znane-błędy)
 
 ## Opis
